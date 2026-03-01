@@ -1,5 +1,15 @@
 services:
 
+  # Run tests: docker compose run tests
+  tests:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /app
+    volumes:
+      - .:/app
+      - maven-cache:/root/.m2
+    command: mvn test
+    profiles: ["tests"]
+
   # Redis (webhook deduplication)
   redis:
     image: redis:7-alpine
@@ -82,3 +92,6 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
     ports:
       - "8080:8080"
+
+volumes:
+  maven-cache:
