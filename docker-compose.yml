@@ -1,0 +1,84 @@
+services:
+
+  # Redis (webhook deduplication)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  # LocalStack (SQS)
+  localstack:
+    image: localstack/localstack:3.x
+    environment:
+      SERVICES: sqs
+      DEFAULT_REGION: us-east-1
+    ports:
+      - "4566:4566"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      retries: 10
+
+  localstack-init:
+    image: amazon/aws-cli:latest
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: >
+      /bin/sh -c "
+        aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name argus-trigger-queue &&
+        aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name argus-hitl-request-queue &&
+        aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name argus-audit-queue
+      "
+
+  # MCP Servers
+  # NOTE: Jira MCP is the official Atlassian-hosted server (https://mcp.atlassian.com/v1/mcp)
+  # No Docker container needed for Jira — Argus connects directly over the internet.
+
+  mcp-grafana:
+    image: grafana/mcp-grafana
+    ports:
+      - "8002:8000"
+    environment:
+      GRAFANA_URL: ${GRAFANA_URL}
+      GRAFANA_SERVICE_ACCOUNT_TOKEN: ${GRAFANA_SERVICE_ACCOUNT_TOKEN}
+    command: ["--transport", "sse", "--disable-write"]
+
+  # Argus Service
+  argus:
+    build: .
+    depends_on:
+      localstack-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      mcp-grafana:
+        condition: service_started
+    environment:
+      SPRING_DATA_REDIS_URL: redis://redis:6379
+      SQS_ENDPOINT: http://localstack:4566
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      ARGUS_TRIGGER_QUEUE_URL: http://localstack:4566/000000000000/argus-trigger-queue
+      ARGUS_HITL_REQUEST_QUEUE_URL: http://localstack:4566/000000000000/argus-hitl-request-queue
+      ARGUS_AUDIT_QUEUE_URL: http://localstack:4566/000000000000/argus-audit-queue
+      ARGUS_MCP_GRAFANA_URL: http://mcp-grafana:8000
+      ATLASSIAN_EMAIL: ${ATLASSIAN_EMAIL}
+      ATLASSIAN_API_TOKEN: ${ATLASSIAN_API_TOKEN}
+      ARGUS_WEBHOOK_SECRET: local-dev-secret
+      ARGUS_JIRA_WEBHOOK_SECRET: local-jira-secret
+      ARGUS_HITL_CHANNEL_ID: C0000000000
+      ARGUS_SLACK_BOT_TOKEN: xoxb-local
+      ARGUS_SLACK_SIGNING_SECRET: local-signing-secret
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "8080:8080"

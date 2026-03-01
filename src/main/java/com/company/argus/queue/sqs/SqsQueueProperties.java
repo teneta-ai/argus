@@ -1,0 +1,22 @@
+package com.company.argus.queue.sqs;
+
+import com.company.argus.queue.QueueNames;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.Map;
+
+@ConfigurationProperties(prefix = "cloud.aws.queues")
+public record SqsQueueProperties(
+        String trigger,
+        String hitlRequest,
+        String audit
+) {
+    public String resolveUrl(String queueName) {
+        return switch (queueName) {
+            case QueueNames.TRIGGER -> trigger;
+            case QueueNames.HITL_REQUEST -> hitlRequest;
+            case QueueNames.AUDIT -> audit;
+            default -> throw new IllegalArgumentException("Unknown queue: " + queueName);
+        };
+    }
+}

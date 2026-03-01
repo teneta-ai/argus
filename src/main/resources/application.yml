@@ -1,0 +1,109 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+  application:
+    name: argus
+  data:
+    redis:
+      url: ${SPRING_DATA_REDIS_URL:redis://localhost:6379}
+
+argus:
+  webhook:
+    hmac-secret: ${ARGUS_WEBHOOK_SECRET}
+    timestamp-tolerance-seconds: 300
+    deduplication-ttl-seconds: 3600
+    jira:
+      secret: ${ARGUS_JIRA_WEBHOOK_SECRET}
+
+  hitl:
+    channel: slack
+    approval-timeout-minutes: 15
+    slack:
+      channel-id: ${ARGUS_HITL_CHANNEL_ID}
+      bot-token: ${ARGUS_SLACK_BOT_TOKEN}
+      signing-secret: ${ARGUS_SLACK_SIGNING_SECRET}
+
+  mcp:
+    atlassian:
+      url: ${ARGUS_MCP_ATLASSIAN_URL:https://mcp.atlassian.com/v1/mcp}
+      email: ${ATLASSIAN_EMAIL}
+      api-token: ${ATLASSIAN_API_TOKEN}
+    grafana:
+      url: ${ARGUS_MCP_GRAFANA_URL:http://localhost:8002}
+
+  tools:
+    allow-list:
+      - agentType: CS_TRIAGE
+        toolName: jira_get_issue
+        accessLevel: READ
+        requiresHitl: false
+      - agentType: CS_TRIAGE
+        toolName: jira_add_comment
+        accessLevel: READ_WRITE
+        requiresHitl: false
+      - agentType: CS_TRIAGE
+        toolName: grafana_search_dashboards
+        accessLevel: READ
+        requiresHitl: false
+      - agentType: CS_TRIAGE
+        toolName: grafana_list_alert_rules
+        accessLevel: READ
+        requiresHitl: false
+      - agentType: VERSION_DRIFT
+        toolName: jira_get_issue
+        accessLevel: READ
+        requiresHitl: false
+      - agentType: VERSION_DRIFT
+        toolName: jira_search_issues
+        accessLevel: READ
+        requiresHitl: false
+      - agentType: VERSION_DRIFT
+        toolName: grafana_search_dashboards
+        accessLevel: READ
+        requiresHitl: false
+      - agentType: VERSION_DRIFT
+        toolName: grafana_list_alert_rules
+        accessLevel: READ
+        requiresHitl: false
+      - agentType: ALERT_NOISE
+        toolName: grafana_list_alert_rules
+        accessLevel: READ
+        requiresHitl: false
+      - agentType: ALERT_NOISE
+        toolName: grafana_search_dashboards
+        accessLevel: READ
+        requiresHitl: false
+      - agentType: ALERT_NOISE
+        toolName: jira_create_issue
+        accessLevel: READ_WRITE
+        requiresHitl: true
+
+  sanitizer:
+    max-chars:
+      jira: 4000
+      grafana: 1000
+      webhook-payload: 2000
+
+  schedule:
+    version-drift: "0 0 8 * * MON-FRI"
+    alert-noise: "0 0 */4 * * *"
+
+cloud:
+  aws:
+    sqs:
+      endpoint: ${SQS_ENDPOINT:https://sqs.us-east-1.amazonaws.com}
+      region: ${AWS_REGION:us-east-1}
+    queues:
+      trigger: ${ARGUS_TRIGGER_QUEUE_URL}
+      hitl-request: ${ARGUS_HITL_REQUEST_QUEUE_URL}
+      audit: ${ARGUS_AUDIT_QUEUE_URL}
+
+langchain4j:
+  google-ai-gemini:
+    chat-model:
+      api-key: ${GEMINI_API_KEY}
+      model-name: gemini-1.5-pro
+      max-output-tokens: 2048
+      log-requests: true
+      log-responses: true
