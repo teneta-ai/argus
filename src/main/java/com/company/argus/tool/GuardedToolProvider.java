@@ -1,7 +1,8 @@
 package com.company.argus.tool;
 
-import com.company.argus.AgentRunContext;
-import com.company.argus.AgentType;
+import com.company.argus.shared.AgentType;
+import com.company.argus.shared.RunContext;
+import com.company.argus.shared.RunContextHolder;
 import com.company.argus.audit.AuditEvent;
 import com.company.argus.audit.AuditService;
 import com.company.argus.hitl.HitlService;
@@ -48,8 +49,9 @@ public class GuardedToolProvider implements ToolProvider {
 
     @Override
     public ToolProviderResult provideTools(ToolProviderRequest request) {
-        AgentType agentType = AgentRunContext.current().getAgentType();
-        UUID agentRunId = AgentRunContext.current().getAgentRunId();
+        RunContext ctx = RunContextHolder.current();
+        AgentType agentType = ctx.agentType();
+        UUID agentRunId = ctx.runId();
 
         // 1. Get all tools from all MCP servers
         ToolProviderResult mcpResult = delegate.provideTools(request);

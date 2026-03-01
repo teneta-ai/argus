@@ -1,4 +1,4 @@
 @org.springframework.modulith.ApplicationModule(
-    allowedDependencies = { "queue", "tool", "audit" }
+    allowedDependencies = { "shared", "queue", "tool", "audit", "trigger" }
 )
 package com.company.argus.agent;

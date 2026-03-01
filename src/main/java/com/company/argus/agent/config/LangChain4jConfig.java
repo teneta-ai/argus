@@ -1,6 +1,6 @@
 package com.company.argus.agent.config;
 
-import com.company.argus.AgentType;
+import com.company.argus.shared.AgentType;
 import com.company.argus.agent.impl.AlertNoiseAgent;
 import com.company.argus.agent.impl.CsTriageAgent;
 import com.company.argus.agent.impl.VersionDriftAgent;

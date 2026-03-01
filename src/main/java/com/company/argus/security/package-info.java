@@ -1,4 +1,4 @@
 @org.springframework.modulith.ApplicationModule(
-    allowedDependencies = { "tool", "audit" }
+    allowedDependencies = { "shared", "tool", "audit" }
 )
 package com.company.argus.security;

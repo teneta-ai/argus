@@ -1,7 +1,8 @@
 package com.company.argus.security;
 
-import com.company.argus.AgentRunContext;
-import com.company.argus.AgentType;
+import com.company.argus.agent.AgentRunContext;
+import com.company.argus.shared.AgentType;
+import com.company.argus.shared.RunContextHolder;
 import com.company.argus.audit.AuditService;
 import com.company.argus.tool.ToolAllowList;
 import com.company.argus.tool.ToolAllowListEntry;
@@ -30,12 +31,12 @@ class LlmOutputValidatorTest {
         ));
         auditService = mock(AuditService.class);
         validator = new LlmOutputValidator(allowList, auditService);
-        AgentRunContext.set(new AgentRunContext(UUID.randomUUID(), AgentType.CS_TRIAGE));
+        RunContextHolder.set(new AgentRunContext(UUID.randomUUID(), AgentType.CS_TRIAGE));
     }
 
     @AfterEach
     void tearDown() {
-        AgentRunContext.clear();
+        RunContextHolder.clear();
     }
 
     @Test

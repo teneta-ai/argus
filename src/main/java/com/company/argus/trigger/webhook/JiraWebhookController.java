@@ -1,11 +1,11 @@
 package com.company.argus.trigger.webhook;
 
-import com.company.argus.AgentType;
+import com.company.argus.shared.AgentType;
 import com.company.argus.queue.QueueNames;
 import com.company.argus.queue.QueuePort;
 import com.company.argus.tool.sanitizer.DataSource;
 import com.company.argus.tool.sanitizer.PromptInjectionSanitizer;
-import com.company.argus.TriggerEvent;
+import com.company.argus.trigger.TriggerEvent;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

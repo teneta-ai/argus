@@ -1,7 +1,7 @@
 package com.company.argus.agent;
 
-import com.company.argus.AgentRunContext;
-import com.company.argus.AgentType;
+import com.company.argus.shared.AgentType;
+import com.company.argus.shared.RunContextHolder;
 import com.company.argus.agent.impl.AlertNoiseAgent;
 import com.company.argus.agent.impl.CsTriageAgent;
 import com.company.argus.agent.impl.VersionDriftAgent;
@@ -9,7 +9,7 @@ import com.company.argus.audit.AuditEvent;
 import com.company.argus.audit.AuditService;
 import com.company.argus.queue.QueueNames;
 import com.company.argus.queue.QueuePort;
-import com.company.argus.TriggerEvent;
+import com.company.argus.trigger.TriggerEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -62,7 +62,7 @@ public class AgentOrchestrator {
         AgentType agentType = event.agentType();
 
         log.info("Agent run started: agentRunId={}, agentType={}", agentRunId, agentType);
-        AgentRunContext.set(new AgentRunContext(agentRunId, agentType));
+        RunContextHolder.set(new AgentRunContext(agentRunId, agentType));
 
         try {
             String result = runAgent(agentType, event.payload());
@@ -82,7 +82,7 @@ public class AgentOrchestrator {
                     e.getMessage(), Instant.now()));
             throw e;
         } finally {
-            AgentRunContext.clear();
+            RunContextHolder.clear();
         }
     }
 

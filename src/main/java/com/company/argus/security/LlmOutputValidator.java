@@ -3,7 +3,8 @@ package com.company.argus.security;
 import com.company.argus.audit.AuditEvent;
 import com.company.argus.audit.AuditService;
 import com.company.argus.tool.ToolAllowList;
-import com.company.argus.AgentRunContext;
+import com.company.argus.shared.RunContext;
+import com.company.argus.shared.RunContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -30,11 +31,12 @@ public class LlmOutputValidator {
     }
 
     public ValidationResult validate(String llmOutput, String referencedToolName) {
-        UUID agentRunId = AgentRunContext.current().getAgentRunId();
+        RunContext ctx = RunContextHolder.current();
+        UUID agentRunId = ctx.runId();
 
         // Tool name referenced is absent from allow-list
         if (referencedToolName != null
-                && !allowList.isApproved(AgentRunContext.current().getAgentType(), referencedToolName)) {
+                && !allowList.isApproved(ctx.agentType(), referencedToolName)) {
             auditService.publish(AuditEvent.failed(agentRunId, referencedToolName,
                     "LLM referenced tool not in allow-list"));
             return ValidationResult.rejected("Tool " + referencedToolName + " not in allow-list");

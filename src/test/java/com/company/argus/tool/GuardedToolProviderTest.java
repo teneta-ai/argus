@@ -1,7 +1,8 @@
 package com.company.argus.tool;
 
-import com.company.argus.AgentRunContext;
-import com.company.argus.AgentType;
+import com.company.argus.agent.AgentRunContext;
+import com.company.argus.shared.AgentType;
+import com.company.argus.shared.RunContextHolder;
 import com.company.argus.audit.AuditService;
 import com.company.argus.hitl.ApprovalDeniedException;
 import com.company.argus.hitl.ApprovalStatus;
@@ -44,12 +45,12 @@ class GuardedToolProviderTest {
         guardedToolProvider = new GuardedToolProvider(
                 mcpToolProvider, allowList, hitlService, auditService, sanitizer);
 
-        AgentRunContext.set(new AgentRunContext(UUID.randomUUID(), AgentType.CS_TRIAGE));
+        RunContextHolder.set(new AgentRunContext(UUID.randomUUID(), AgentType.CS_TRIAGE));
     }
 
     @AfterEach
     void tearDown() {
-        AgentRunContext.clear();
+        RunContextHolder.clear();
     }
 
     @Test

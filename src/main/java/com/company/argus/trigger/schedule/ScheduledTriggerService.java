@@ -1,9 +1,9 @@
 package com.company.argus.trigger.schedule;
 
-import com.company.argus.AgentType;
+import com.company.argus.shared.AgentType;
 import com.company.argus.queue.QueueNames;
 import com.company.argus.queue.QueuePort;
-import com.company.argus.TriggerEvent;
+import com.company.argus.trigger.TriggerEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;

@@ -1,4 +1,4 @@
-package com.company.argus;
+package com.company.argus.shared;
 
 public enum AgentType {
 

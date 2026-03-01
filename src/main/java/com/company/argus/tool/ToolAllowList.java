@@ -1,6 +1,6 @@
 package com.company.argus.tool;
 
-import com.company.argus.AgentType;
+import com.company.argus.shared.AgentType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;
