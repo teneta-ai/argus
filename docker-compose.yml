@@ -44,7 +44,9 @@ services:
       AWS_DEFAULT_REGION: us-east-1
     entrypoint: >
       /bin/sh -c "
-        aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name argus-trigger-queue &&
+        aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name argus-cs-triage-queue &&
+        aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name argus-version-drift-queue &&
+        aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name argus-alert-noise-queue &&
         aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name argus-hitl-request-queue &&
         aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name argus-audit-queue
       "
@@ -78,7 +80,9 @@ services:
       AWS_REGION: us-east-1
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
-      ARGUS_TRIGGER_QUEUE_URL: http://localstack:4566/000000000000/argus-trigger-queue
+      ARGUS_CS_TRIAGE_QUEUE_URL: http://localstack:4566/000000000000/argus-cs-triage-queue
+      ARGUS_VERSION_DRIFT_QUEUE_URL: http://localstack:4566/000000000000/argus-version-drift-queue
+      ARGUS_ALERT_NOISE_QUEUE_URL: http://localstack:4566/000000000000/argus-alert-noise-queue
       ARGUS_HITL_REQUEST_QUEUE_URL: http://localstack:4566/000000000000/argus-hitl-request-queue
       ARGUS_AUDIT_QUEUE_URL: http://localstack:4566/000000000000/argus-audit-queue
       ARGUS_MCP_GRAFANA_URL: http://mcp-grafana:8000

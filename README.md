@@ -27,13 +27,16 @@ argus/
 
 ## Queue Topology
 
+Each agent has its own dedicated SQS queue. Webhooks and schedules publish directly
+to the target agent's queue. The orchestrator subscribes to all agent queues.
+
 ```
 [Webhook / Schedule]
         │
-        ▼
-argus-trigger-queue
-        │
-        ▼
+        ├──► argus-cs-triage-queue ──────► AgentOrchestrator → CsTriageAgent
+        ├──► argus-version-drift-queue ──► AgentOrchestrator → VersionDriftAgent
+        └──► argus-alert-noise-queue ────► AgentOrchestrator → AlertNoiseAgent
+
 [AgentOrchestrator]
         │
         ├──(requiresHitl=true)──► HitlService (in-memory ConcurrentHashMap)
@@ -94,7 +97,9 @@ export SQS_ENDPOINT=http://localhost:4566
 export AWS_REGION=us-east-1
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
-export ARGUS_TRIGGER_QUEUE_URL=http://localhost:4566/000000000000/argus-trigger-queue
+export ARGUS_CS_TRIAGE_QUEUE_URL=http://localhost:4566/000000000000/argus-cs-triage-queue
+export ARGUS_VERSION_DRIFT_QUEUE_URL=http://localhost:4566/000000000000/argus-version-drift-queue
+export ARGUS_ALERT_NOISE_QUEUE_URL=http://localhost:4566/000000000000/argus-alert-noise-queue
 export ARGUS_HITL_REQUEST_QUEUE_URL=http://localhost:4566/000000000000/argus-hitl-request-queue
 export ARGUS_AUDIT_QUEUE_URL=http://localhost:4566/000000000000/argus-audit-queue
 export ARGUS_WEBHOOK_SECRET=local-dev-secret
@@ -130,11 +135,14 @@ This runs `mvn test` in a disposable Maven container with a shared cache volume 
 
 ## How to Add a New Agent
 
-1. Add a new value to `AgentType` enum with `description()` and `jobDescription()`
-2. Create a new agent interface in `agent/impl/` with `@SystemMessage`
-3. Add a bean in `LangChain4jConfig` using `AiServices.builder()` with `.toolProvider(guardedToolProvider)`
-4. Add a case to `AgentOrchestrator.runAgent()`
-5. Add the agent's required tools to the allow-list in `application.yml`
+1. Add a new value to `AgentType` enum with `description()`, `jobDescription()`, and `queueName()`
+2. Add a new constant to `QueueNames`
+3. Add the queue URL to `SqsQueueProperties` and its `resolveUrl()` switch
+4. Create a new agent interface in `agent/impl/` with `@SystemMessage`
+5. Add a bean in `LangChain4jConfig` using `AiServices.builder()` with `.toolProvider(guardedToolProvider)`
+6. Subscribe to the new queue in `AgentOrchestrator.startListening()` and add a case to `runAgent()`
+7. Add the queue to `docker-compose.yml` (localstack-init + argus env vars) and `application.yml`
+8. Add the agent's required tools to the allow-list in `application.yml`
 
 ## How to Add a New Tool (MCP Server)
 

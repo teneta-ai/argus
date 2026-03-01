@@ -4,7 +4,6 @@ import ai.teneta.argus.queue.QueueNames;
 import ai.teneta.argus.queue.QueuePort;
 import ai.teneta.argus.shared.AgentType;
 import ai.teneta.argus.tool.sanitizer.PromptInjectionSanitizer;
-import ai.teneta.argus.trigger.TriggerEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -42,7 +41,7 @@ class JiraWebhookControllerTest {
     }
 
     @Test
-    void uniqueWebhookPublishesToTriggerQueue() {
+    void uniqueWebhookPublishesToAgentQueue() {
         when(deduplicator.isDuplicate("wh-new-001")).thenReturn(false);
 
         ResponseEntity<Void> response = controller.handle(
@@ -50,12 +49,11 @@ class JiraWebhookControllerTest {
 
         assertEquals(202, response.getStatusCode().value());
 
-        ArgumentCaptor<TriggerEvent> eventCaptor = ArgumentCaptor.forClass(TriggerEvent.class);
-        verify(queuePort).publish(eq(QueueNames.TRIGGER), eventCaptor.capture());
+        ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(queuePort).publish(eq(QueueNames.CS_TRIAGE), payloadCaptor.capture());
 
-        TriggerEvent event = eventCaptor.getValue();
-        assertEquals(AgentType.CS_TRIAGE, event.agentType());
-        assertTrue(event.payload().contains("PROJ-1"));
+        String sanitized = (String) payloadCaptor.getValue();
+        assertTrue(sanitized.contains("PROJ-1"));
     }
 
     @Test
@@ -78,10 +76,10 @@ class JiraWebhookControllerTest {
 
         controller.handle(AgentType.CS_TRIAGE, maliciousPayload, "sha256=abc", "wh-inject");
 
-        ArgumentCaptor<TriggerEvent> eventCaptor = ArgumentCaptor.forClass(TriggerEvent.class);
-        verify(queuePort).publish(eq(QueueNames.TRIGGER), eventCaptor.capture());
+        ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(queuePort).publish(eq(QueueNames.CS_TRIAGE), payloadCaptor.capture());
 
-        String sanitized = eventCaptor.getValue().payload();
+        String sanitized = (String) payloadCaptor.getValue();
         assertTrue(sanitized.contains("[FILTERED]"));
         assertTrue(sanitized.contains("<external_data"));
     }

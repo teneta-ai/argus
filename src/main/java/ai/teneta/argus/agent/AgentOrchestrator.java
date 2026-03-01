@@ -10,8 +10,6 @@ import ai.teneta.argus.audit.AuditService;
 import ai.teneta.argus.queue.QueueNames;
 import ai.teneta.argus.queue.QueuePort;
 import ai.teneta.argus.security.LlmOutputValidator;
-import ai.teneta.argus.trigger.TriggerEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +30,6 @@ public class AgentOrchestrator {
     private final AlertNoiseAgent alertNoiseAgent;
     private final AuditService auditService;
     private final LlmOutputValidator llmOutputValidator;
-    private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
     public AgentOrchestrator(
@@ -42,7 +39,6 @@ public class AgentOrchestrator {
             AlertNoiseAgent alertNoiseAgent,
             AuditService auditService,
             LlmOutputValidator llmOutputValidator,
-            ObjectMapper objectMapper,
             ApplicationEventPublisher eventPublisher) {
         this.queuePort = queuePort;
         this.csTriageAgent = csTriageAgent;
@@ -50,26 +46,25 @@ public class AgentOrchestrator {
         this.alertNoiseAgent = alertNoiseAgent;
         this.auditService = auditService;
         this.llmOutputValidator = llmOutputValidator;
-        this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
     }
 
     @PostConstruct
     public void startListening() {
-        queuePort.subscribe(QueueNames.TRIGGER, this::handleTrigger);
-        log.info("AgentOrchestrator subscribed to {}", QueueNames.TRIGGER);
+        queuePort.subscribe(QueueNames.CS_TRIAGE, payload -> handleAgent(AgentType.CS_TRIAGE, payload));
+        queuePort.subscribe(QueueNames.VERSION_DRIFT, payload -> handleAgent(AgentType.VERSION_DRIFT, payload));
+        queuePort.subscribe(QueueNames.ALERT_NOISE, payload -> handleAgent(AgentType.ALERT_NOISE, payload));
+        log.info("AgentOrchestrator subscribed to per-agent queues");
     }
 
-    private void handleTrigger(String body) throws Exception {
-        TriggerEvent event = objectMapper.readValue(body, TriggerEvent.class);
+    private void handleAgent(AgentType agentType, String payload) throws Exception {
         UUID agentRunId = UUID.randomUUID();
-        AgentType agentType = event.agentType();
 
         log.info("Agent run started: agentRunId={}, agentType={}", agentRunId, agentType);
         RunContextHolder.set(new AgentRunContext(agentRunId, agentType));
 
         try {
-            String result = runAgent(agentType, event.payload());
+            String result = runAgent(agentType, payload);
 
             LlmOutputValidator.ValidationResult validation =
                     llmOutputValidator.validate(result, null);

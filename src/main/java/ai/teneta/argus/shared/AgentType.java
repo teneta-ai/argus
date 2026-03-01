@@ -1,5 +1,7 @@
 package ai.teneta.argus.shared;
 
+import ai.teneta.argus.queue.QueueNames;
+
 public enum AgentType {
 
     CS_TRIAGE(
@@ -49,5 +51,13 @@ public enum AgentType {
 
     public String jobDescription() {
         return jobDescription;
+    }
+
+    public String queueName() {
+        return switch (this) {
+            case CS_TRIAGE -> QueueNames.CS_TRIAGE;
+            case VERSION_DRIFT -> QueueNames.VERSION_DRIFT;
+            case ALERT_NOISE -> QueueNames.ALERT_NOISE;
+        };
     }
 }
