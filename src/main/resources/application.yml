@@ -105,5 +105,5 @@ langchain4j:
       api-key: ${GEMINI_API_KEY}
       model-name: gemini-1.5-pro
       max-output-tokens: 2048
-      log-requests: true
-      log-responses: true
+      log-requests: ${LANGCHAIN4J_LOG_REQUESTS:false}
+      log-responses: ${LANGCHAIN4J_LOG_RESPONSES:false}

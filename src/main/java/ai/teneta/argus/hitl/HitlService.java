@@ -31,11 +31,12 @@ public class HitlService {
     }
 
     public void requestApproval(UUID agentRunId, String toolName, Object params) {
+        UUID requestId = UUID.randomUUID();
         ApprovalRequest req = new ApprovalRequest(
-                agentRunId, toolName, params,
+                requestId, agentRunId, toolName, params,
                 Instant.now().plus(timeoutMinutes, ChronoUnit.MINUTES));
         CompletableFuture<ApprovalStatus> future = new CompletableFuture<>();
-        pending.put(agentRunId, future);
+        pending.put(requestId, future);
         channel.sendApprovalRequest(req);
 
         ApprovalStatus decision;
@@ -47,19 +48,19 @@ public class HitlService {
             decision = ApprovalStatus.TIMED_OUT;
             log.error("Error waiting for HITL approval: {}", e.getMessage(), e);
         } finally {
-            pending.remove(agentRunId);
+            pending.remove(requestId);
         }
 
-        channel.updateWithDecision(agentRunId.toString(), decision, null);
+        channel.updateWithDecision(requestId.toString(), decision, null);
 
         if (decision != ApprovalStatus.APPROVED) {
             throw new ApprovalDeniedException(toolName, decision);
         }
     }
 
-    public void resolve(UUID agentRunId, ApprovalStatus decision, String decidedBy) {
-        log.info("HITL resolved: agentRunId={}, decision={}, decidedBy={}", agentRunId, decision, decidedBy);
-        Optional.ofNullable(pending.get(agentRunId))
+    public void resolve(UUID requestId, ApprovalStatus decision, String decidedBy) {
+        log.info("HITL resolved: requestId={}, decision={}, decidedBy={}", requestId, decision, decidedBy);
+        Optional.ofNullable(pending.get(requestId))
                 .ifPresent(f -> f.complete(decision));
     }
 

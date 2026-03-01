@@ -57,8 +57,8 @@ public class HitlCallbackController {
                     ? ApprovalStatus.APPROVED
                     : ApprovalStatus.REJECTED;
 
-            UUID agentRunId = UUID.fromString(correlationId);
-            hitlService.resolve(agentRunId, decision, userName);
+            UUID requestId = UUID.fromString(correlationId);
+            hitlService.resolve(requestId, decision, userName);
 
             return ResponseEntity.ok().build();
         } catch (Exception e) {

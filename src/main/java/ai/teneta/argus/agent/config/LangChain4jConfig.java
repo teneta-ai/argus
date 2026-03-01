@@ -1,6 +1,5 @@
 package ai.teneta.argus.agent.config;
 
-import ai.teneta.argus.shared.AgentType;
 import ai.teneta.argus.agent.impl.AlertNoiseAgent;
 import ai.teneta.argus.agent.impl.CsTriageAgent;
 import ai.teneta.argus.agent.impl.VersionDriftAgent;

@@ -20,9 +20,10 @@ class HitlChannelSwapTest {
 
         UUID runId1 = UUID.randomUUID();
         doAnswer(inv -> {
+            ApprovalRequest req = inv.getArgument(0);
             CompletableFuture.runAsync(() -> {
                 try { Thread.sleep(50); } catch (InterruptedException ignored) {}
-                slackService.resolve(runId1, ApprovalStatus.APPROVED, "slack-user");
+                slackService.resolve(req.requestId(), ApprovalStatus.APPROVED, "slack-user");
             });
             return null;
         }).when(slackChannel).sendApprovalRequest(any());
@@ -38,9 +39,10 @@ class HitlChannelSwapTest {
 
         UUID runId2 = UUID.randomUUID();
         doAnswer(inv -> {
+            ApprovalRequest req = inv.getArgument(0);
             CompletableFuture.runAsync(() -> {
                 try { Thread.sleep(50); } catch (InterruptedException ignored) {}
-                teamsService.resolve(runId2, ApprovalStatus.APPROVED, "teams-user");
+                teamsService.resolve(req.requestId(), ApprovalStatus.APPROVED, "teams-user");
             });
             return null;
         }).when(teamsChannel).sendApprovalRequest(any());
@@ -68,15 +70,19 @@ class HitlChannelSwapTest {
         HitlService service = new HitlService(channel, 1);
         UUID runId = UUID.randomUUID();
 
-        // Resolve immediately to avoid blocking
+        // Resolve using requestId captured from the channel callback
         CompletableFuture.runAsync(() -> {
-            try { Thread.sleep(100); } catch (InterruptedException ignored) {}
-            service.resolve(runId, ApprovalStatus.APPROVED, "admin");
+            // Wait for the request to be sent
+            while (captured.get() == null) {
+                try { Thread.sleep(10); } catch (InterruptedException ignored) {}
+            }
+            service.resolve(captured.get().requestId(), ApprovalStatus.APPROVED, "admin");
         });
 
         service.requestApproval(runId, "grafana_search_dashboards", "{\"query\":\"cpu\"}");
 
         assertNotNull(captured.get());
+        assertNotNull(captured.get().requestId());
         assertEquals(runId, captured.get().agentRunId());
         assertEquals("grafana_search_dashboards", captured.get().toolName());
         assertNotNull(captured.get().expiresAt());
@@ -87,19 +93,15 @@ class HitlChannelSwapTest {
         HitlNotificationChannel slowChannel = mock(HitlNotificationChannel.class);
         when(slowChannel.channelName()).thenReturn("slow-channel");
 
-        // Use a very short timeout (1 minute) — but we rely on the CompletableFuture timeout
-        // To make this test fast, we create the service with a timeout that's short enough
-        // The HitlService uses TimeUnit.MINUTES, so we can't go sub-minute.
-        // Instead, we never resolve the future, and verify the thrown exception.
         HitlService service = new HitlService(slowChannel, 1);
         UUID runId = UUID.randomUUID();
 
-        // Don't resolve — let it time out
-        // But 1 minute is too long for a test. Instead, verify the denied path directly.
+        // Resolve with TIMED_OUT using the requestId from the ApprovalRequest
         doAnswer(inv -> {
+            ApprovalRequest req = inv.getArgument(0);
             CompletableFuture.runAsync(() -> {
                 try { Thread.sleep(50); } catch (InterruptedException ignored) {}
-                service.resolve(runId, ApprovalStatus.TIMED_OUT, null);
+                service.resolve(req.requestId(), ApprovalStatus.TIMED_OUT, null);
             });
             return null;
         }).when(slowChannel).sendApprovalRequest(any());

@@ -7,6 +7,7 @@ import ai.teneta.argus.audit.AuditEvent;
 import ai.teneta.argus.audit.AuditService;
 import ai.teneta.argus.queue.QueueNames;
 import ai.teneta.argus.queue.QueuePort;
+import ai.teneta.argus.security.LlmOutputValidator;
 import ai.teneta.argus.shared.AgentType;
 import ai.teneta.argus.shared.RunContextHolder;
 import ai.teneta.argus.trigger.TriggerEvent;
@@ -26,6 +27,7 @@ class AgentOrchestratorTest {
     private VersionDriftAgent versionDriftAgent;
     private AlertNoiseAgent alertNoiseAgent;
     private AuditService auditService;
+    private LlmOutputValidator llmOutputValidator;
     private ObjectMapper objectMapper;
     private ApplicationEventPublisher eventPublisher;
     private AgentOrchestrator orchestrator;
@@ -37,12 +39,16 @@ class AgentOrchestratorTest {
         versionDriftAgent = mock(VersionDriftAgent.class);
         alertNoiseAgent = mock(AlertNoiseAgent.class);
         auditService = mock(AuditService.class);
+        llmOutputValidator = mock(LlmOutputValidator.class);
         objectMapper = new ObjectMapper();
         eventPublisher = mock(ApplicationEventPublisher.class);
 
+        when(llmOutputValidator.validate(any(), any()))
+                .thenReturn(LlmOutputValidator.ValidationResult.ok());
+
         orchestrator = new AgentOrchestrator(
                 queuePort, csTriageAgent, versionDriftAgent, alertNoiseAgent,
-                auditService, objectMapper, eventPublisher);
+                auditService, llmOutputValidator, objectMapper, eventPublisher);
     }
 
     @Test
@@ -68,6 +74,7 @@ class AgentOrchestratorTest {
         handlerCaptor.getValue().handle(json);
 
         verify(csTriageAgent).triage("PROJ-123");
+        verify(llmOutputValidator).validate("Triaged successfully", null);
         verify(auditService).publish(argThat(e ->
                 e.status() == AuditEvent.Status.SUCCESS
                         && e.toolName().equals("ORCHESTRATOR")));
@@ -121,6 +128,28 @@ class AgentOrchestratorTest {
         verify(auditService).publish(argThat(e ->
                 e.status() == AuditEvent.Status.FAILED
                         && e.detail().contains("LLM timeout")));
+        verify(eventPublisher, never()).publishEvent(any(AgentCompletedEvent.class));
+    }
+
+    @Test
+    void rejectedLlmOutputPublishesFailedAuditEvent() throws Exception {
+        when(csTriageAgent.triage(any())).thenReturn("I am not an AI, I am a human");
+        when(llmOutputValidator.validate(any(), any()))
+                .thenReturn(LlmOutputValidator.ValidationResult.rejected("Identity denial detected"));
+
+        ArgumentCaptor<QueuePort.MessageHandler> handlerCaptor =
+                ArgumentCaptor.forClass(QueuePort.MessageHandler.class);
+        orchestrator.startListening();
+        verify(queuePort).subscribe(eq(QueueNames.TRIGGER), handlerCaptor.capture());
+
+        TriggerEvent event = new TriggerEvent(AgentType.CS_TRIAGE, "PROJ-1");
+        String json = objectMapper.writeValueAsString(event);
+
+        assertThrows(Exception.class, () -> handlerCaptor.getValue().handle(json));
+
+        verify(auditService).publish(argThat(e ->
+                e.status() == AuditEvent.Status.FAILED
+                        && e.detail().contains("LLM output rejected")));
         verify(eventPublisher, never()).publishEvent(any(AgentCompletedEvent.class));
     }
 

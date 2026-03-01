@@ -9,6 +9,7 @@ import ai.teneta.argus.audit.AuditEvent;
 import ai.teneta.argus.audit.AuditService;
 import ai.teneta.argus.queue.QueueNames;
 import ai.teneta.argus.queue.QueuePort;
+import ai.teneta.argus.security.LlmOutputValidator;
 import ai.teneta.argus.trigger.TriggerEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -30,6 +31,7 @@ public class AgentOrchestrator {
     private final VersionDriftAgent versionDriftAgent;
     private final AlertNoiseAgent alertNoiseAgent;
     private final AuditService auditService;
+    private final LlmOutputValidator llmOutputValidator;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -39,6 +41,7 @@ public class AgentOrchestrator {
             VersionDriftAgent versionDriftAgent,
             AlertNoiseAgent alertNoiseAgent,
             AuditService auditService,
+            LlmOutputValidator llmOutputValidator,
             ObjectMapper objectMapper,
             ApplicationEventPublisher eventPublisher) {
         this.queuePort = queuePort;
@@ -46,6 +49,7 @@ public class AgentOrchestrator {
         this.versionDriftAgent = versionDriftAgent;
         this.alertNoiseAgent = alertNoiseAgent;
         this.auditService = auditService;
+        this.llmOutputValidator = llmOutputValidator;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
     }
@@ -66,6 +70,12 @@ public class AgentOrchestrator {
 
         try {
             String result = runAgent(agentType, event.payload());
+
+            LlmOutputValidator.ValidationResult validation =
+                    llmOutputValidator.validate(result, null);
+            if (!validation.accepted()) {
+                throw new IllegalStateException("LLM output rejected: " + validation.reason());
+            }
 
             log.info("Agent run completed: agentRunId={}, agentType={}", agentRunId, agentType);
             auditService.publish(new AuditEvent(

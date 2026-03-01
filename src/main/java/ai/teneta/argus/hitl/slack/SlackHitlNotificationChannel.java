@@ -59,7 +59,8 @@ public class SlackHitlNotificationChannel implements HitlNotificationChannel {
                     .build();
 
             httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            log.info("Sent HITL approval request to Slack: agentRunId={}", request.agentRunId());
+            log.info("Sent HITL approval request to Slack: requestId={}, agentRunId={}",
+                    request.requestId(), request.agentRunId());
         } catch (IOException | InterruptedException e) {
             log.error("Failed to send Slack approval request: {}", e.getMessage(), e);
             if (e instanceof InterruptedException) {
@@ -92,12 +93,12 @@ public class SlackHitlNotificationChannel implements HitlNotificationChannel {
                                 Map.of("type", "plain_text", "text", "Approve"),
                                 "style", "primary",
                                 "action_id", "hitl_approve",
-                                "value", request.agentRunId().toString()),
+                                "value", request.requestId().toString()),
                         Map.of("type", "button", "text",
                                 Map.of("type", "plain_text", "text", "Reject"),
                                 "style", "danger",
                                 "action_id", "hitl_reject",
-                                "value", request.agentRunId().toString())
+                                "value", request.requestId().toString())
                 ))
         );
     }

@@ -17,11 +17,12 @@ class HitlServiceTest {
 
         UUID agentRunId = UUID.randomUUID();
 
-        // Simulate approval arriving before timeout on a separate thread
+        // Capture the requestId from the ApprovalRequest and resolve with it
         doAnswer(inv -> {
+            ApprovalRequest req = inv.getArgument(0);
             CompletableFuture.runAsync(() -> {
                 try { Thread.sleep(50); } catch (InterruptedException ignored) {}
-                service.resolve(agentRunId, ApprovalStatus.APPROVED, "test-user");
+                service.resolve(req.requestId(), ApprovalStatus.APPROVED, "test-user");
             });
             return null;
         }).when(channel).sendApprovalRequest(any());
@@ -30,7 +31,7 @@ class HitlServiceTest {
         assertDoesNotThrow(() -> service.requestApproval(agentRunId, "jira_create_issue", "{}"));
 
         verify(channel).sendApprovalRequest(any());
-        verify(channel).updateWithDecision(eq(agentRunId.toString()), eq(ApprovalStatus.APPROVED), any());
+        verify(channel).updateWithDecision(any(), eq(ApprovalStatus.APPROVED), any());
         assertEquals(0, service.pendingCount());
     }
 
@@ -42,9 +43,10 @@ class HitlServiceTest {
         UUID agentRunId = UUID.randomUUID();
 
         doAnswer(inv -> {
+            ApprovalRequest req = inv.getArgument(0);
             CompletableFuture.runAsync(() -> {
                 try { Thread.sleep(50); } catch (InterruptedException ignored) {}
-                service.resolve(agentRunId, ApprovalStatus.REJECTED, "test-user");
+                service.resolve(req.requestId(), ApprovalStatus.REJECTED, "test-user");
             });
             return null;
         }).when(channel).sendApprovalRequest(any());
