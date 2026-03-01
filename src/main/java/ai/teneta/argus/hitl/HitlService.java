@@ -25,7 +25,7 @@ public class HitlService {
 
     public HitlService(
             HitlNotificationChannel channel,
-            @Value("${argus.hitl.approval-timeout-minutes:15}") long timeoutMinutes) {
+            @Value("${argus.hitl.slack.approval-timeout-minutes:15}") long timeoutMinutes) {
         this.channel = channel;
         this.timeoutMinutes = timeoutMinutes;
     }

@@ -14,7 +14,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 
 @Component
-@ConditionalOnProperty(name = "argus.hitl.channel", havingValue = "slack")
+@ConditionalOnProperty(name = "argus.hitl.slack.bot-token")
 public class SlackCallbackVerifier {
 
     private final String signingSecret;

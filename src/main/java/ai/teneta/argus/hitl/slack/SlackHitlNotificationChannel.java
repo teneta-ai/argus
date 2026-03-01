@@ -18,7 +18,7 @@ import java.net.http.HttpResponse;
 import java.util.Map;
 
 @Component
-@ConditionalOnProperty(name = "argus.hitl.channel", havingValue = "slack")
+@ConditionalOnProperty(name = "argus.hitl.slack.bot-token")
 public class SlackHitlNotificationChannel implements HitlNotificationChannel {
 
     private static final Logger log = LoggerFactory.getLogger(SlackHitlNotificationChannel.class);

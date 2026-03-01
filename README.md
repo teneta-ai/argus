@@ -150,9 +150,9 @@ No code changes are required in agents or `GuardedToolProvider`.
 ## How to Add a New HITL Notification Channel
 
 1. Create a new class implementing `HitlNotificationChannel`
-2. Annotate with `@Component` and `@ConditionalOnProperty(name = "argus.hitl.channel", havingValue = "your-channel")`
+2. Annotate with `@Component` and `@ConditionalOnProperty` gated on a required config key (e.g., `argus.hitl.teams.bot-token`)
 3. Implement `sendApprovalRequest()`, `updateWithDecision()`, and `channelName()`
 4. Add a callback controller if the channel supports interactive responses
-5. Set `argus.hitl.channel=your-channel` in `application.yml`
+5. Add the channel's config block under `argus.hitl.<channel-name>` in `application.yml`
 
 `HitlService` depends only on the `HitlNotificationChannel` interface — no Slack-specific types leak.

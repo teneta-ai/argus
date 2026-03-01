@@ -10,16 +10,16 @@ spring:
 
 argus:
   webhook:
-    hmac-secret: ${ARGUS_WEBHOOK_SECRET}
-    timestamp-tolerance-seconds: 300
-    deduplication-ttl-seconds: 3600
+    generic:
+      hmac-secret: ${ARGUS_WEBHOOK_SECRET}
+      timestamp-tolerance-seconds: 300
     jira:
       secret: ${ARGUS_JIRA_WEBHOOK_SECRET}
+      deduplication-ttl-seconds: 3600
 
   hitl:
-    channel: slack
-    approval-timeout-minutes: 15
     slack:
+      approval-timeout-minutes: 15
       channel-id: ${ARGUS_HITL_CHANNEL_ID}
       bot-token: ${ARGUS_SLACK_BOT_TOKEN}
       signing-secret: ${ARGUS_SLACK_SIGNING_SECRET}

@@ -14,7 +14,7 @@ public class WebhookDeduplicator {
 
     public WebhookDeduplicator(
             StringRedisTemplate redis,
-            @Value("${argus.webhook.deduplication-ttl-seconds:3600}") long ttlSeconds) {
+            @Value("${argus.webhook.jira.deduplication-ttl-seconds:3600}") long ttlSeconds) {
         this.redis = redis;
         this.ttlSeconds = ttlSeconds;
     }

@@ -17,8 +17,8 @@ public class WebhookAuthFilter {
     private final long timestampToleranceSeconds;
 
     public WebhookAuthFilter(
-            @Value("${argus.webhook.hmac-secret}") String hmacSecret,
-            @Value("${argus.webhook.timestamp-tolerance-seconds:300}") long timestampToleranceSeconds) {
+            @Value("${argus.webhook.generic.hmac-secret}") String hmacSecret,
+            @Value("${argus.webhook.generic.timestamp-tolerance-seconds:300}") long timestampToleranceSeconds) {
         this.hmacSecret = hmacSecret;
         this.timestampToleranceSeconds = timestampToleranceSeconds;
     }

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@ConditionalOnProperty(name = "argus.hitl.channel", havingValue = "slack")
+@ConditionalOnProperty(name = "argus.hitl.slack.bot-token")
 public class HitlCallbackController {
 
     private static final Logger log = LoggerFactory.getLogger(HitlCallbackController.class);
