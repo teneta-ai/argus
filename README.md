@@ -21,7 +21,8 @@ argus/
 ├── tool/       ← GuardedToolProvider + MCP client config + sanitizer
 ├── hitl/       ← Human-In-The-Loop approval workflows (Slack)
 ├── audit/      ← Fire-and-forget audit event publishing
-└── security/   ← LLM output validation
+├── security/   ← LLM output validation
+└── shared/     ← AgentType enum, RunContext, RunContextHolder
 ```
 
 ## Queue Topology
@@ -64,6 +65,13 @@ argus-trigger-queue
 - Docker + Docker Compose
 
 ### 1. Set environment variables
+
+```bash
+cp .env.example .env
+# Fill in your actual values in .env
+```
+
+Or export them directly:
 
 ```bash
 export ATLASSIAN_EMAIL=your@email.com
@@ -111,6 +119,14 @@ curl -X POST http://localhost:8080/webhook/CS_TRIAGE \
   -H "X-Argus-Timestamp: ${TIMESTAMP}" \
   -d "${BODY}"
 ```
+
+## Running Tests
+
+```bash
+docker compose run tests
+```
+
+This runs `mvn test` in a disposable Maven container with a shared cache volume — no local Java install required.
 
 ## How to Add a New Agent
 
