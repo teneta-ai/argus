@@ -3,8 +3,6 @@ package ai.teneta.argus.queue.sqs;
 import ai.teneta.argus.queue.QueueNames;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import java.util.Map;
-
 @ConfigurationProperties(prefix = "cloud.aws.queues")
 public record SqsQueueProperties(
         String trigger,
