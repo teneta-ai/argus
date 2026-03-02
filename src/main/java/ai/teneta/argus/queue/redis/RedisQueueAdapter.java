@@ -17,6 +17,8 @@ public class RedisQueueAdapter implements QueuePort {
 
     private static final Logger log = LoggerFactory.getLogger(RedisQueueAdapter.class);
     private static final Duration POP_TIMEOUT = Duration.ofSeconds(2);
+    private static final int MAX_RETRIES = 3;
+    private static final String DEAD_LETTER_SUFFIX = ":dlq";
 
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
@@ -60,8 +62,19 @@ public class RedisQueueAdapter implements QueuePort {
                     } catch (Exception e) {
                         log.error("Failed to handle message from queue={}: {}",
                                 queueName, e.getMessage(), e);
-                        // Re-enqueue failed messages for retry
-                        redis.opsForList().leftPush(queueName, message);
+
+                        Long retries = redis.opsForHash().increment(
+                                queueName + ":retries", message, 1);
+                        if (retries <= MAX_RETRIES) {
+                            log.warn("Re-enqueuing message for retry {}/{} on queue={}",
+                                    retries, MAX_RETRIES, queueName);
+                            redis.opsForList().leftPush(queueName, message);
+                        } else {
+                            log.error("Message exceeded {} retries, moving to DLQ: {}",
+                                    MAX_RETRIES, queueName + DEAD_LETTER_SUFFIX);
+                            redis.opsForList().leftPush(queueName + DEAD_LETTER_SUFFIX, message);
+                            redis.opsForHash().delete(queueName + ":retries", message);
+                        }
                     }
                 } catch (Exception e) {
                     if (Thread.currentThread().isInterrupted()) {

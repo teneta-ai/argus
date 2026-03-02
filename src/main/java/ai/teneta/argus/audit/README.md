@@ -2,11 +2,11 @@
 
 ## Purpose
 
-The audit module provides fire-and-forget audit event publishing to SQS. Every tool
-call attempt, success, failure, and block is recorded as an `AuditEvent`. The service
+The audit module provides fire-and-forget audit event publishing. Every tool call
+attempt, success, failure, and block is recorded as an `AuditEvent`. The service
 is intentionally resilient — audit failures never break the agent pipeline. Events
-are published to the audit queue for downstream consumption by analytics or compliance
-systems.
+are published to the audit queue (Redis List) for downstream consumption by analytics
+or compliance systems.
 
 ## Public API
 
@@ -15,7 +15,7 @@ systems.
 
 ## Events Published
 
-None (publishes to SQS queue).
+None (publishes to queue via QueuePort).
 
 ## Events Consumed
 
@@ -32,11 +32,13 @@ None.
 ## Configuration
 
 ```yaml
-cloud:
-  aws:
-    queues:
-      audit: ${ARGUS_AUDIT_QUEUE_URL}
+spring:
+  data:
+    redis:
+      url: ${SPRING_DATA_REDIS_URL:redis://localhost:6379}
 ```
+
+Audit events are published to the `argus-audit-queue` Redis List (see `QueueNames`).
 
 ## Do not depend on
 

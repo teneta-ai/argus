@@ -39,7 +39,13 @@ public class HitlService {
                 Instant.now().plus(timeoutMinutes, ChronoUnit.MINUTES));
         CompletableFuture<HitlDecision> future = new CompletableFuture<>();
         pending.put(requestId, future);
-        channel.sendApprovalRequest(req);
+
+        try {
+            channel.sendApprovalRequest(req);
+        } catch (Exception e) {
+            pending.remove(requestId);
+            throw e;
+        }
 
         HitlDecision result;
         try {

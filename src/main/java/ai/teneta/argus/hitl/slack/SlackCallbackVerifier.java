@@ -32,7 +32,12 @@ public class SlackCallbackVerifier {
         }
 
         // Replay protection — reject if timestamp > 5 min old
-        long ts = Long.parseLong(timestamp);
+        long ts;
+        try {
+            ts = Long.parseLong(timestamp);
+        } catch (NumberFormatException e) {
+            throw new SlackVerificationException("Invalid timestamp format");
+        }
         if (Math.abs(Instant.now().getEpochSecond() - ts) > 300) {
             throw new SlackVerificationException("Timestamp out of window");
         }

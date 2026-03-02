@@ -47,6 +47,10 @@ public class PromptInjectionSanitizer {
     }
 
     private String wrapXml(String content, DataSource source) {
-        return "<external_data source=\"" + source.label() + "\">\n" + content + "\n</external_data>";
+        String escaped = content
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
+        return "<external_data source=\"" + source.label() + "\">\n" + escaped + "\n</external_data>";
     }
 }

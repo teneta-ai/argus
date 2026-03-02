@@ -39,9 +39,8 @@ None.
 ```yaml
 argus:
   hitl:
-    channel: slack
-    approval-timeout-minutes: 15
     slack:
+      approval-timeout-minutes: 15
       channel-id: ${ARGUS_HITL_CHANNEL_ID}
       bot-token: ${ARGUS_SLACK_BOT_TOKEN}
       signing-secret: ${ARGUS_SLACK_SIGNING_SECRET}
