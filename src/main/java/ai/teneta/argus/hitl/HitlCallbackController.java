@@ -7,11 +7,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @RestController
@@ -33,16 +36,19 @@ public class HitlCallbackController {
         this.objectMapper = objectMapper;
     }
 
-    @PostMapping("/hitl/slack/interaction")
+    @PostMapping(value = "/hitl/slack/interaction",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<Void> handleInteraction(
             HttpServletRequest request,
             @RequestBody String rawBody) {
 
-        // Verify HMAC before any deserialization
+        // Verify HMAC over the original raw body before any decoding
         slackCallbackVerifier.verify(request, rawBody);
 
         try {
-            JsonNode payload = objectMapper.readTree(rawBody);
+            // Slack sends application/x-www-form-urlencoded with a "payload" parameter
+            String jsonPayload = extractPayloadParam(rawBody);
+            JsonNode payload = objectMapper.readTree(jsonPayload);
             JsonNode actions = payload.path("actions");
             if (actions.isEmpty()) {
                 return ResponseEntity.badRequest().build();
@@ -65,5 +71,15 @@ public class HitlCallbackController {
             log.error("Failed to process Slack interaction: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    private String extractPayloadParam(String formBody) {
+        for (String param : formBody.split("&")) {
+            String[] kv = param.split("=", 2);
+            if (kv.length == 2 && "payload".equals(kv[0])) {
+                return URLDecoder.decode(kv[1], StandardCharsets.UTF_8);
+            }
+        }
+        throw new IllegalArgumentException("Missing 'payload' parameter in Slack interaction request");
     }
 }

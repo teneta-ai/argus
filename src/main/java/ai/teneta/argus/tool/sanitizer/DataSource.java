@@ -7,19 +7,19 @@ public enum DataSource {
     WEBHOOK_PAYLOAD("webhook-payload", 2000);
 
     private final String label;
-    private final int maxChars;
+    private final int defaultMaxChars;
 
-    DataSource(String label, int maxChars) {
+    DataSource(String label, int defaultMaxChars) {
         this.label = label;
-        this.maxChars = maxChars;
+        this.defaultMaxChars = defaultMaxChars;
     }
 
     public String label() {
         return label;
     }
 
-    public int maxChars() {
-        return maxChars;
+    public int defaultMaxChars() {
+        return defaultMaxChars;
     }
 
     public static DataSource fromToolName(String toolName) {

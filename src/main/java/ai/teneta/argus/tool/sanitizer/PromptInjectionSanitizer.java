@@ -17,14 +17,21 @@ public class PromptInjectionSanitizer {
 
     private static final String FILTERED = "[FILTERED]";
 
+    private final SanitizerProperties properties;
+
+    public PromptInjectionSanitizer(SanitizerProperties properties) {
+        this.properties = properties;
+    }
+
     public String sanitize(String input, DataSource source) {
         if (input == null || input.isEmpty()) {
             return wrapXml("", source);
         }
 
-        // 1. Hard truncate to source.maxChars()
-        String result = input.length() > source.maxChars()
-                ? input.substring(0, source.maxChars())
+        int maxChars = properties.resolveMaxChars(source);
+        // 1. Hard truncate to configured max chars
+        String result = input.length() > maxChars
+                ? input.substring(0, maxChars)
                 : input;
 
         // 2. Strip control chars except \n \t

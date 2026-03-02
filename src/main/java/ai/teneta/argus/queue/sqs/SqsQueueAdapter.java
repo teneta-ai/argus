@@ -36,10 +36,14 @@ public class SqsQueueAdapter implements QueuePort {
     public void publish(String queueName, Object payload) {
         String queueUrl = queueProperties.resolveUrl(queueName);
         String body;
-        try {
-            body = objectMapper.writeValueAsString(payload);
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("Failed to serialize queue payload", e);
+        if (payload instanceof String s) {
+            body = s;
+        } else {
+            try {
+                body = objectMapper.writeValueAsString(payload);
+            } catch (JsonProcessingException e) {
+                throw new IllegalArgumentException("Failed to serialize queue payload", e);
+            }
         }
 
         sqsClient.sendMessage(SendMessageRequest.builder()

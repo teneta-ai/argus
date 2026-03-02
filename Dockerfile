@@ -11,4 +11,4 @@ RUN addgroup -S argus && adduser -S argus -G argus
 USER argus
 COPY --from=build /app/target/argus-*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-XX:+UseVirtualThreads", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

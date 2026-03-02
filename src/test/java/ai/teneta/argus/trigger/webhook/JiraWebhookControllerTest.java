@@ -4,6 +4,7 @@ import ai.teneta.argus.queue.QueueNames;
 import ai.teneta.argus.queue.QueuePort;
 import ai.teneta.argus.shared.AgentType;
 import ai.teneta.argus.tool.sanitizer.PromptInjectionSanitizer;
+import ai.teneta.argus.tool.sanitizer.SanitizerProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -24,7 +25,7 @@ class JiraWebhookControllerTest {
     void setUp() {
         authFilter = mock(JiraWebhookAuthFilter.class);
         deduplicator = mock(WebhookDeduplicator.class);
-        sanitizer = new PromptInjectionSanitizer();
+        sanitizer = new PromptInjectionSanitizer(new SanitizerProperties(null));
         queuePort = mock(QueuePort.class);
         controller = new JiraWebhookController(authFilter, deduplicator, sanitizer, queuePort);
     }

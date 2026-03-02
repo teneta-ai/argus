@@ -9,6 +9,7 @@ import ai.teneta.argus.hitl.ApprovalStatus;
 import ai.teneta.argus.hitl.HitlService;
 import ai.teneta.argus.tool.sanitizer.DataSource;
 import ai.teneta.argus.tool.sanitizer.PromptInjectionSanitizer;
+import ai.teneta.argus.tool.sanitizer.SanitizerProperties;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.McpToolProvider;
@@ -40,7 +41,7 @@ class GuardedToolProviderTest {
         allowList = new ToolAllowList();
         hitlService = mock(HitlService.class);
         auditService = mock(AuditService.class);
-        sanitizer = new PromptInjectionSanitizer();
+        sanitizer = new PromptInjectionSanitizer(new SanitizerProperties(null));
 
         guardedToolProvider = new GuardedToolProvider(
                 mcpToolProvider, allowList, hitlService, auditService, sanitizer);

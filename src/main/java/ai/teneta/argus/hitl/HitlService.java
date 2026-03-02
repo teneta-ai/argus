@@ -19,7 +19,9 @@ public class HitlService {
 
     private static final Logger log = LoggerFactory.getLogger(HitlService.class);
 
-    private final ConcurrentHashMap<UUID, CompletableFuture<ApprovalStatus>> pending = new ConcurrentHashMap<>();
+    record HitlDecision(ApprovalStatus status, String decidedBy) {}
+
+    private final ConcurrentHashMap<UUID, CompletableFuture<HitlDecision>> pending = new ConcurrentHashMap<>();
     private final HitlNotificationChannel channel;
     private final long timeoutMinutes;
 
@@ -35,33 +37,33 @@ public class HitlService {
         ApprovalRequest req = new ApprovalRequest(
                 requestId, agentRunId, toolName, params,
                 Instant.now().plus(timeoutMinutes, ChronoUnit.MINUTES));
-        CompletableFuture<ApprovalStatus> future = new CompletableFuture<>();
+        CompletableFuture<HitlDecision> future = new CompletableFuture<>();
         pending.put(requestId, future);
         channel.sendApprovalRequest(req);
 
-        ApprovalStatus decision;
+        HitlDecision result;
         try {
-            decision = future.get(timeoutMinutes, TimeUnit.MINUTES);
+            result = future.get(timeoutMinutes, TimeUnit.MINUTES);
         } catch (TimeoutException e) {
-            decision = ApprovalStatus.TIMED_OUT;
+            result = new HitlDecision(ApprovalStatus.TIMED_OUT, null);
         } catch (Exception e) {
-            decision = ApprovalStatus.TIMED_OUT;
+            result = new HitlDecision(ApprovalStatus.TIMED_OUT, null);
             log.error("Error waiting for HITL approval: {}", e.getMessage(), e);
         } finally {
             pending.remove(requestId);
         }
 
-        channel.updateWithDecision(requestId.toString(), decision, null);
+        channel.updateWithDecision(requestId.toString(), result.status(), result.decidedBy());
 
-        if (decision != ApprovalStatus.APPROVED) {
-            throw new ApprovalDeniedException(toolName, decision);
+        if (result.status() != ApprovalStatus.APPROVED) {
+            throw new ApprovalDeniedException(toolName, result.status());
         }
     }
 
     public void resolve(UUID requestId, ApprovalStatus decision, String decidedBy) {
         log.info("HITL resolved: requestId={}, decision={}, decidedBy={}", requestId, decision, decidedBy);
         Optional.ofNullable(pending.get(requestId))
-                .ifPresent(f -> f.complete(decision));
+                .ifPresent(f -> f.complete(new HitlDecision(decision, decidedBy)));
     }
 
     // Visible for testing

@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PromptInjectionSanitizerTest {
 
-    private final PromptInjectionSanitizer sanitizer = new PromptInjectionSanitizer();
+    private final PromptInjectionSanitizer sanitizer = new PromptInjectionSanitizer(new SanitizerProperties(null));
 
     @Test
     void filtersIgnoreInstructions() {

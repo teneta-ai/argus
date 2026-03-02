@@ -2,6 +2,7 @@ package ai.teneta.argus.tool.config;
 
 import ai.teneta.argus.tool.McpClientRegistry;
 import ai.teneta.argus.tool.ToolAllowList;
+import ai.teneta.argus.tool.sanitizer.SanitizerProperties;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.http.HttpMcpTransport;
@@ -16,7 +17,7 @@ import java.util.Base64;
 import java.util.Map;
 
 @Configuration
-@EnableConfigurationProperties(ToolAllowList.class)
+@EnableConfigurationProperties({ ToolAllowList.class, SanitizerProperties.class })
 public class McpConfig {
 
     @Bean

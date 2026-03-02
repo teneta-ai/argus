@@ -24,7 +24,9 @@ None.
 
 ## Queue Interactions
 
-- **argus-trigger-queue** — used by trigger module to enqueue agent triggers
+- **argus-cs-triage-queue** — triggers and schedules publish payloads for CS Triage agent
+- **argus-version-drift-queue** — triggers and schedules publish payloads for Version Drift agent
+- **argus-alert-noise-queue** — triggers and schedules publish payloads for Alert Noise agent
 - **argus-hitl-request-queue** — used by HITL module for approval request processing
 - **argus-audit-queue** — used by audit module for fire-and-forget audit event publishing
 
@@ -41,7 +43,9 @@ cloud:
       endpoint: ${SQS_ENDPOINT}
       region: ${AWS_REGION}
     queues:
-      trigger: ${ARGUS_TRIGGER_QUEUE_URL}
+      cs-triage: ${ARGUS_CS_TRIAGE_QUEUE_URL}
+      version-drift: ${ARGUS_VERSION_DRIFT_QUEUE_URL}
+      alert-noise: ${ARGUS_ALERT_NOISE_QUEUE_URL}
       hitl-request: ${ARGUS_HITL_REQUEST_QUEUE_URL}
       audit: ${ARGUS_AUDIT_QUEUE_URL}
 ```
