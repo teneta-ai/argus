@@ -15,8 +15,8 @@ Argus runs AI agents that automate internal operations:
 
 ```
 argus/
-├── trigger/    ← Webhooks + scheduled cron triggers → publish to SQS
-├── queue/      ← QueuePort abstraction over AWS SQS
+├── trigger/    ← Webhooks + scheduled cron triggers → publish to queues
+├── queue/      ← QueuePort abstraction over Redis Lists
 ├── agent/      ← AI agent definitions + AgentOrchestrator
 ├── tool/       ← GuardedToolProvider + MCP client config + sanitizer
 ├── hitl/       ← Human-In-The-Loop approval workflows (Slack)
@@ -27,8 +27,8 @@ argus/
 
 ## Queue Topology
 
-Each agent has its own dedicated SQS queue. Webhooks and schedules publish directly
-to the target agent's queue. The orchestrator subscribes to all agent queues.
+Each agent has its own dedicated Redis List queue. Webhooks and schedules publish
+directly to the target agent's queue. The orchestrator subscribes to all agent queues.
 
 ```
 [Webhook / Schedule]
@@ -87,21 +87,12 @@ export GEMINI_API_KEY=your-gemini-api-key
 ### 2. Start infrastructure
 
 ```bash
-docker compose up -d redis localstack localstack-init mcp-grafana
+docker compose up -d redis mcp-grafana
 ```
 
 ### 3. Run the service
 
 ```bash
-export SQS_ENDPOINT=http://localhost:4566
-export AWS_REGION=us-east-1
-export AWS_ACCESS_KEY_ID=test
-export AWS_SECRET_ACCESS_KEY=test
-export ARGUS_CS_TRIAGE_QUEUE_URL=http://localhost:4566/000000000000/argus-cs-triage-queue
-export ARGUS_VERSION_DRIFT_QUEUE_URL=http://localhost:4566/000000000000/argus-version-drift-queue
-export ARGUS_ALERT_NOISE_QUEUE_URL=http://localhost:4566/000000000000/argus-alert-noise-queue
-export ARGUS_HITL_REQUEST_QUEUE_URL=http://localhost:4566/000000000000/argus-hitl-request-queue
-export ARGUS_AUDIT_QUEUE_URL=http://localhost:4566/000000000000/argus-audit-queue
 export ARGUS_JIRA_WEBHOOK_SECRET=local-jira-secret
 export ARGUS_HITL_CHANNEL_ID=C0000000000
 export ARGUS_SLACK_BOT_TOKEN=xoxb-local
@@ -135,12 +126,10 @@ This runs `mvn test` in a disposable Maven container with a shared cache volume 
 
 1. Add a new value to `AgentType` enum with `description()`, `jobDescription()`, and `queueName()`
 2. Add a new constant to `QueueNames`
-3. Add the queue URL to `SqsQueueProperties` and its `resolveUrl()` switch
-4. Create a new agent interface in `agent/impl/` with `@SystemMessage`
-5. Add a bean in `LangChain4jConfig` using `AiServices.builder()` with `.toolProvider(guardedToolProvider)`
-6. Subscribe to the new queue in `AgentOrchestrator.startListening()` and add a case to `runAgent()`
-7. Add the queue to `docker-compose.yml` (localstack-init + argus env vars) and `application.yml`
-8. Add the agent's required tools to the allow-list in `application.yml`
+3. Create a new agent interface in `agent/impl/` with `@SystemMessage`
+4. Add a bean in `LangChain4jConfig` using `AiServices.builder()` with `.toolProvider(guardedToolProvider)`
+5. Subscribe to the new queue in `AgentOrchestrator.startListening()` and add a case to `runAgent()`
+6. Add the agent's required tools to the allow-list in `application.yml`
 
 ## How to Add a New Webhook Integration
 

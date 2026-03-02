@@ -86,18 +86,6 @@ argus:
     version-drift: "0 0 8 * * MON-FRI"
     alert-noise: "0 0 */4 * * *"
 
-cloud:
-  aws:
-    sqs:
-      endpoint: ${SQS_ENDPOINT:https://sqs.us-east-1.amazonaws.com}
-      region: ${AWS_REGION:us-east-1}
-    queues:
-      cs-triage: ${ARGUS_CS_TRIAGE_QUEUE_URL}
-      version-drift: ${ARGUS_VERSION_DRIFT_QUEUE_URL}
-      alert-noise: ${ARGUS_ALERT_NOISE_QUEUE_URL}
-      hitl-request: ${ARGUS_HITL_REQUEST_QUEUE_URL}
-      audit: ${ARGUS_AUDIT_QUEUE_URL}
-
 langchain4j:
   google-ai-gemini:
     chat-model:

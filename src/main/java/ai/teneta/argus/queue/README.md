@@ -3,16 +3,15 @@
 ## Purpose
 
 The queue module provides an abstraction layer over message queue infrastructure (currently
-AWS SQS). It exposes a `QueuePort` interface that other modules use to publish and subscribe
-to queues without coupling to the underlying SQS SDK. This ensures that all queue interactions
-are centralized and that swapping queue providers requires changes only within this module.
+Redis Lists). It exposes a `QueuePort` interface that other modules use to publish and subscribe
+to queues without coupling to the underlying Redis implementation. This ensures that all queue
+interactions are centralized and that swapping queue providers requires changes only within this module.
 
 ## Public API
 
 - `QueuePort` — interface for publishing messages and subscribing to queues
 - `QueuePort.MessageHandler` — functional interface for message consumers
 - `QueueNames` — constants for all queue names used in the system
-- `QueueMessage` — record representing a received message with receipt handle
 
 ## Events Published
 
@@ -37,18 +36,13 @@ None.
 ## Configuration
 
 ```yaml
-cloud:
-  aws:
-    sqs:
-      endpoint: ${SQS_ENDPOINT}
-      region: ${AWS_REGION}
-    queues:
-      cs-triage: ${ARGUS_CS_TRIAGE_QUEUE_URL}
-      version-drift: ${ARGUS_VERSION_DRIFT_QUEUE_URL}
-      alert-noise: ${ARGUS_ALERT_NOISE_QUEUE_URL}
-      hitl-request: ${ARGUS_HITL_REQUEST_QUEUE_URL}
-      audit: ${ARGUS_AUDIT_QUEUE_URL}
+spring:
+  data:
+    redis:
+      url: ${SPRING_DATA_REDIS_URL:redis://localhost:6379}
 ```
+
+Queues are Redis Lists keyed by queue name (see `QueueNames`). No pre-provisioning required.
 
 ## Do not depend on
 
