@@ -102,7 +102,6 @@ export ARGUS_VERSION_DRIFT_QUEUE_URL=http://localhost:4566/000000000000/argus-ve
 export ARGUS_ALERT_NOISE_QUEUE_URL=http://localhost:4566/000000000000/argus-alert-noise-queue
 export ARGUS_HITL_REQUEST_QUEUE_URL=http://localhost:4566/000000000000/argus-hitl-request-queue
 export ARGUS_AUDIT_QUEUE_URL=http://localhost:4566/000000000000/argus-audit-queue
-export ARGUS_WEBHOOK_SECRET=local-dev-secret
 export ARGUS_JIRA_WEBHOOK_SECRET=local-jira-secret
 export ARGUS_HITL_CHANNEL_ID=C0000000000
 export ARGUS_SLACK_BOT_TOKEN=xoxb-local
@@ -111,17 +110,16 @@ export ARGUS_SLACK_SIGNING_SECRET=local-signing-secret
 mvn spring-boot:run
 ```
 
-### 4. Send a test webhook
+### 4. Send a test Jira webhook
 
 ```bash
-TIMESTAMP=$(date +%s)
-BODY='{"issueKey":"CS-1234"}'
-SIG=$(echo -n "${TIMESTAMP}.${BODY}" | openssl dgst -sha256 -hmac "local-dev-secret" | awk '{print $2}')
+BODY='{"webhookEvent":"jira:issue_updated","issue":{"key":"CS-1234"}}'
+SIG="sha256=$(echo -n "${BODY}" | openssl dgst -sha256 -hmac "local-jira-secret" | awk '{print $2}')"
 
-curl -X POST http://localhost:8080/webhook/CS_TRIAGE \
+curl -X POST http://localhost:8080/webhook/jira/CS_TRIAGE \
   -H "Content-Type: application/json" \
-  -H "X-Argus-Signature: ${SIG}" \
-  -H "X-Argus-Timestamp: ${TIMESTAMP}" \
+  -H "X-Hub-Signature: ${SIG}" \
+  -H "X-Atlassian-Webhook-Identifier: test-$(date +%s)" \
   -d "${BODY}"
 ```
 
@@ -143,6 +141,15 @@ This runs `mvn test` in a disposable Maven container with a shared cache volume 
 6. Subscribe to the new queue in `AgentOrchestrator.startListening()` and add a case to `runAgent()`
 7. Add the queue to `docker-compose.yml` (localstack-init + argus env vars) and `application.yml`
 8. Add the agent's required tools to the allow-list in `application.yml`
+
+## How to Add a New Webhook Integration
+
+1. Create a dedicated controller (e.g., `GrafanaWebhookController`) under `trigger/webhook/`
+2. Create a corresponding auth filter (e.g., `GrafanaWebhookAuthFilter`) with the integration's auth scheme
+3. Add the integration's config under `argus.webhook.<name>` in `application.yml`
+4. The controller sanitizes the payload and publishes to `agentType.queueName()`
+
+Each integration gets its own endpoint, auth filter, and secret — no shared generic webhook.
 
 ## How to Add a New Tool (MCP Server)
 

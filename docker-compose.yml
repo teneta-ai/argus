@@ -88,7 +88,6 @@ services:
       ARGUS_MCP_GRAFANA_URL: http://mcp-grafana:8000
       ATLASSIAN_EMAIL: ${ATLASSIAN_EMAIL}
       ATLASSIAN_API_TOKEN: ${ATLASSIAN_API_TOKEN}
-      ARGUS_WEBHOOK_SECRET: local-dev-secret
       ARGUS_JIRA_WEBHOOK_SECRET: local-jira-secret
       ARGUS_HITL_CHANNEL_ID: C0000000000
       ARGUS_SLACK_BOT_TOKEN: xoxb-local

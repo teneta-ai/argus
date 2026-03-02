@@ -10,8 +10,6 @@ spring:
 
 argus:
   webhook:
-    hmac-secret: ${ARGUS_WEBHOOK_SECRET}
-    timestamp-tolerance-seconds: 300
     jira:
       secret: ${ARGUS_JIRA_WEBHOOK_SECRET}
       deduplication-ttl-seconds: 3600

@@ -2,10 +2,10 @@
 
 ## Purpose
 
-The trigger module is the ingress point for all agent executions. It handles incoming
-webhooks (both generic HMAC-signed and Jira Cloud webhooks) and scheduled cron triggers.
-All triggers sanitize their payloads and publish directly to per-agent SQS queues
-for async processing by the agent orchestrator.
+The trigger module is the ingress point for all agent executions. Each integrated
+system has its own dedicated webhook controller (e.g., Jira Cloud). Scheduled cron
+triggers handle periodic scans. All triggers sanitize their payloads and publish
+directly to per-agent SQS queues for async processing by the agent orchestrator.
 
 ## Public API
 
@@ -32,8 +32,6 @@ None.
 ```yaml
 argus:
   webhook:
-    hmac-secret: ${ARGUS_WEBHOOK_SECRET}
-    timestamp-tolerance-seconds: 300
     jira:
       secret: ${ARGUS_JIRA_WEBHOOK_SECRET}
       deduplication-ttl-seconds: 3600
