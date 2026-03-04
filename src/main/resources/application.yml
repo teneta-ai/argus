@@ -7,6 +7,9 @@ spring:
   data:
     redis:
       url: ${SPRING_DATA_REDIS_URL:redis://localhost:6379}
+  web:
+    resources:
+      add-mappings: ${argus.chat.enabled:false}
 
 argus:
   webhook:
@@ -81,6 +84,9 @@ argus:
       jira: 4000
       grafana: 1000
       webhook-payload: 2000
+
+  chat:
+    enabled: ${ARGUS_CHAT_ENABLED:false}
 
   schedule:
     version-drift: "0 0 8 * * MON-FRI"
