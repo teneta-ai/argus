@@ -1,0 +1,59 @@
+services:
+
+  # Run tests: docker compose run tests
+  tests:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /app
+    volumes:
+      - .:/app
+      - maven-cache:/root/.m2
+    command: mvn test
+    profiles: ["tests"]
+
+  # Redis (queues + webhook deduplication)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  # MCP Servers
+  # NOTE: Jira MCP is the official Atlassian-hosted server (https://mcp.atlassian.com/v1/mcp)
+  # No Docker container needed for Jira — Argus connects directly over the internet.
+
+  mcp-grafana:
+    image: grafana/mcp-grafana
+    ports:
+      - "8002:8000"
+    environment:
+      GRAFANA_URL: ${GRAFANA_URL}
+      GRAFANA_SERVICE_ACCOUNT_TOKEN: ${GRAFANA_SERVICE_ACCOUNT_TOKEN}
+    command: ["--transport", "sse", "--disable-write"]
+
+  # Argus Service
+  argus:
+    build: .
+    depends_on:
+      redis:
+        condition: service_healthy
+      mcp-grafana:
+        condition: service_started
+    environment:
+      SPRING_DATA_REDIS_URL: redis://redis:6379
+      ARGUS_MCP_GRAFANA_URL: http://mcp-grafana:8000
+      ATLASSIAN_EMAIL: ${ATLASSIAN_EMAIL}
+      ATLASSIAN_API_TOKEN: ${ATLASSIAN_API_TOKEN}
+      ARGUS_CHAT_ENABLED: "true"
+      ARGUS_JIRA_WEBHOOK_SECRET: local-jira-secret
+      ARGUS_HITL_CHANNEL_ID: C0000000000
+      ARGUS_SLACK_BOT_TOKEN: xoxb-local
+      ARGUS_SLACK_SIGNING_SECRET: local-signing-secret
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "8080:8080"
+
+volumes:
+  maven-cache:
