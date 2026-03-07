@@ -5,7 +5,7 @@
 The trigger module is the ingress point for all agent executions. Each integrated
 system has its own dedicated webhook controller (e.g., Jira Cloud). Scheduled cron
 triggers handle periodic scans. All triggers sanitize their payloads and publish
-directly to per-agent SQS queues for async processing by the agent orchestrator.
+directly to per-agent queues (via QueuePort) for async processing by the agent orchestrator.
 
 ## Public API
 
@@ -13,7 +13,7 @@ None — triggers are entry points only; no types are exported.
 
 ## Events Published
 
-None (publishes to SQS queues, not Spring events).
+None (publishes to queues via QueuePort, not Spring events).
 
 ## Events Consumed
 

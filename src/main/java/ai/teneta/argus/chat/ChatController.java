@@ -55,6 +55,9 @@ public class ChatController {
 
     @PostMapping
     public ResponseEntity<?> chat(@RequestBody ChatRequest request) {
+        if (request.agentType() == null) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("Agent type is required"));
+        }
         if (request.message() == null || request.message().isBlank()) {
             return ResponseEntity.badRequest().body(new ErrorResponse("Message is required"));
         }

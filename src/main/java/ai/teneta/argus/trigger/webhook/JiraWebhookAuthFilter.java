@@ -18,6 +18,11 @@ public class JiraWebhookAuthFilter {
         this.secret = secret;
     }
 
+    /**
+     * Verifies the HMAC-SHA256 signature on an incoming Jira webhook.
+     * Replay protection is handled separately by {@link WebhookDeduplicator}
+     * using the {@code X-Atlassian-Webhook-Identifier} header.
+     */
     public void verify(String rawBody, String signature) {
         if (signature == null || !signature.startsWith("sha256=")) {
             throw new WebhookAuthException("Missing or malformed X-Hub-Signature");

@@ -52,6 +52,10 @@ public class HitlService {
             result = future.get(timeoutMinutes, TimeUnit.MINUTES);
         } catch (TimeoutException e) {
             result = new HitlDecision(ApprovalStatus.TIMED_OUT, null);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            result = new HitlDecision(ApprovalStatus.TIMED_OUT, null);
+            log.warn("HITL approval wait interrupted: requestId={}", requestId);
         } catch (Exception e) {
             result = new HitlDecision(ApprovalStatus.TIMED_OUT, null);
             log.error("Error waiting for HITL approval: {}", e.getMessage(), e);

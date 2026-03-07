@@ -8,7 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,6 +22,7 @@ public class RedisQueueAdapter implements QueuePort {
     private static final Duration POP_TIMEOUT = Duration.ofSeconds(2);
     private static final int MAX_RETRIES = 3;
     private static final String DEAD_LETTER_SUFFIX = ":dlq";
+    private static final String RETRY_SUFFIX = ":retries";
 
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
@@ -57,14 +61,16 @@ public class RedisQueueAdapter implements QueuePort {
                         continue;
                     }
 
+                    String retryKey = sha256Hex(message);
                     try {
                         handler.handle(message);
+                        redis.opsForHash().delete(queueName + RETRY_SUFFIX, retryKey);
                     } catch (Exception e) {
                         log.error("Failed to handle message from queue={}: {}",
                                 queueName, e.getMessage(), e);
 
                         Long retries = redis.opsForHash().increment(
-                                queueName + ":retries", message, 1);
+                                queueName + RETRY_SUFFIX, retryKey, 1);
                         if (retries <= MAX_RETRIES) {
                             log.warn("Re-enqueuing message for retry {}/{} on queue={}",
                                     retries, MAX_RETRIES, queueName);
@@ -73,7 +79,7 @@ public class RedisQueueAdapter implements QueuePort {
                             log.error("Message exceeded {} retries, moving to DLQ: {}",
                                     MAX_RETRIES, queueName + DEAD_LETTER_SUFFIX);
                             redis.opsForList().leftPush(queueName + DEAD_LETTER_SUFFIX, message);
-                            redis.opsForHash().delete(queueName + ":retries", message);
+                            redis.opsForHash().delete(queueName + RETRY_SUFFIX, retryKey);
                         }
                     }
                 } catch (Exception e) {
@@ -93,5 +99,15 @@ public class RedisQueueAdapter implements QueuePort {
         });
 
         pollingThreads.put(queueName, pollingThread);
+    }
+
+    private static String sha256Hex(String input) {
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256")
+                    .digest(input.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (Exception e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
     }
 }

@@ -16,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @ConditionalOnProperty(name = "argus.hitl.slack.bot-token")
@@ -29,6 +30,7 @@ public class SlackHitlNotificationChannel implements HitlNotificationChannel {
     private final String botToken;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final ConcurrentHashMap<String, String> messageTimestamps = new ConcurrentHashMap<>();
 
     public SlackHitlNotificationChannel(
             @Value("${argus.hitl.slack.channel-id}") String channelId,
@@ -58,7 +60,11 @@ public class SlackHitlNotificationChannel implements HitlNotificationChannel {
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build();
 
-            httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            var responseBody = objectMapper.readTree(response.body());
+            if (responseBody.path("ok").asBoolean() && responseBody.has("ts")) {
+                messageTimestamps.put(request.requestId().toString(), responseBody.get("ts").asText());
+            }
             log.info("Sent HITL approval request to Slack: requestId={}, agentRunId={}",
                     request.requestId(), request.agentRunId());
         } catch (IOException | InterruptedException e) {
@@ -71,8 +77,46 @@ public class SlackHitlNotificationChannel implements HitlNotificationChannel {
 
     @Override
     public void updateWithDecision(String correlationId, ApprovalStatus status, String decidedBy) {
-        log.info("HITL decision for {}: {} by {}", correlationId, status,
-                decidedBy != null ? decidedBy : "system");
+        String decidedByLabel = decidedBy != null ? decidedBy : "system";
+        log.info("HITL decision for {}: {} by {}", correlationId, status, decidedByLabel);
+
+        String messageTs = messageTimestamps.remove(correlationId);
+        if (messageTs == null) {
+            return;
+        }
+
+        try {
+            String statusEmoji = switch (status) {
+                case APPROVED -> "\u2705";
+                case REJECTED -> "\u274c";
+                case TIMED_OUT -> "\u23f0";
+            };
+            Map<String, Object> payload = Map.of(
+                    "channel", channelId,
+                    "ts", messageTs,
+                    "text", statusEmoji + " HITL " + status + " by " + decidedByLabel,
+                    "blocks", java.util.List.of(
+                            Map.of("type", "section", "text",
+                                    Map.of("type", "mrkdwn", "text",
+                                            statusEmoji + " *HITL " + status + "* by " + decidedByLabel
+                                                    + " (request: `" + correlationId + "`)")))
+            );
+
+            String body = objectMapper.writeValueAsString(payload);
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(SLACK_UPDATE_URL))
+                    .header("Authorization", "Bearer " + botToken)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException | InterruptedException e) {
+            log.error("Failed to update Slack message: {}", e.getMessage(), e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     @Override
