@@ -7,7 +7,6 @@ internal ops tasks using LLM reasoning over MCP-backed tools.
 
 Argus runs AI agents that automate internal operations:
 
-- **CS Triage** — Triages customer support tickets by correlating Jira issues with Grafana metrics
 - **Version Drift Detection** — Detects version drift across environments and creates tracking issues
 - **Alert Noise Reduction** — Evaluates Grafana alerts and filters actionable noise from expected patterns
 
@@ -33,7 +32,6 @@ directly to the target agent's queue. The orchestrator subscribes to all agent q
 ```
 [Webhook / Schedule]
         │
-        ├──► argus-cs-triage-queue ──────► AgentOrchestrator → CsTriageAgent
         ├──► argus-version-drift-queue ──► AgentOrchestrator → VersionDriftAgent
         └──► argus-alert-noise-queue ────► AgentOrchestrator → AlertNoiseAgent
 
@@ -107,7 +105,7 @@ mvn spring-boot:run
 BODY='{"webhookEvent":"jira:issue_updated","issue":{"key":"CS-1234"}}'
 SIG="sha256=$(echo -n "${BODY}" | openssl dgst -sha256 -hmac "local-jira-secret" | awk '{print $2}')"
 
-curl -X POST http://localhost:8080/webhook/jira/CS_TRIAGE \
+curl -X POST http://localhost:8080/webhook/jira/VERSION_DRIFT \
   -H "Content-Type: application/json" \
   -H "X-Hub-Signature: ${SIG}" \
   -H "X-Atlassian-Webhook-Identifier: test-$(date +%s)" \

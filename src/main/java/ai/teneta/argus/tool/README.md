@@ -47,7 +47,7 @@ argus:
       url: ${ARGUS_MCP_GRAFANA_URL}
   tools:
     allow-list:
-      - agentType: CS_TRIAGE
+      - agentType: VERSION_DRIFT
         toolName: jira_get_issue
         accessLevel: READ
         requiresHitl: false

@@ -46,7 +46,7 @@ class GuardedToolProviderTest {
         guardedToolProvider = new GuardedToolProvider(
                 mcpToolProvider, allowList, hitlService, auditService, sanitizer);
 
-        RunContextHolder.set(new AgentRunContext(UUID.randomUUID(), AgentType.CS_TRIAGE));
+        RunContextHolder.set(new AgentRunContext(UUID.randomUUID(), AgentType.VERSION_DRIFT));
     }
 
     @AfterEach
@@ -57,7 +57,7 @@ class GuardedToolProviderTest {
     @Test
     void blockedToolNotInAllowList() {
         allowList.setAllowList(java.util.List.of(
-                new ToolAllowListEntry("CS_TRIAGE", "jira_get_issue",
+                new ToolAllowListEntry("VERSION_DRIFT", "jira_get_issue",
                         ToolAllowListEntry.AccessLevel.READ, false)
         ));
 
@@ -79,7 +79,7 @@ class GuardedToolProviderTest {
     @Test
     void hitlRequiredToolCallsHitlService() {
         allowList.setAllowList(java.util.List.of(
-                new ToolAllowListEntry("CS_TRIAGE", "jira_add_comment",
+                new ToolAllowListEntry("VERSION_DRIFT", "jira_add_comment",
                         ToolAllowListEntry.AccessLevel.READ_WRITE, true)
         ));
 
@@ -104,7 +104,7 @@ class GuardedToolProviderTest {
     @Test
     void hitlRejectionPropagatesException() {
         allowList.setAllowList(java.util.List.of(
-                new ToolAllowListEntry("CS_TRIAGE", "jira_add_comment",
+                new ToolAllowListEntry("VERSION_DRIFT", "jira_add_comment",
                         ToolAllowListEntry.AccessLevel.READ_WRITE, true)
         ));
 
@@ -129,7 +129,7 @@ class GuardedToolProviderTest {
     @Test
     void sanitizesToolOutput() {
         allowList.setAllowList(java.util.List.of(
-                new ToolAllowListEntry("CS_TRIAGE", "jira_get_issue",
+                new ToolAllowListEntry("VERSION_DRIFT", "jira_get_issue",
                         ToolAllowListEntry.AccessLevel.READ, false)
         ));
 

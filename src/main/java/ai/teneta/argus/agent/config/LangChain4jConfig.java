@@ -1,7 +1,6 @@
 package ai.teneta.argus.agent.config;
 
 import ai.teneta.argus.agent.impl.AlertNoiseAgent;
-import ai.teneta.argus.agent.impl.CsTriageAgent;
 import ai.teneta.argus.agent.impl.VersionDriftAgent;
 import ai.teneta.argus.tool.GuardedToolProvider;
 import dev.langchain4j.model.chat.ChatModel;
@@ -11,16 +10,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class LangChain4jConfig {
-
-    @Bean
-    public CsTriageAgent csTriageAgent(
-            ChatModel model,
-            GuardedToolProvider guardedToolProvider) {
-        return AiServices.builder(CsTriageAgent.class)
-                .chatModel(model)
-                .toolProvider(guardedToolProvider)
-                .build();
-    }
 
     @Bean
     public VersionDriftAgent versionDriftAgent(

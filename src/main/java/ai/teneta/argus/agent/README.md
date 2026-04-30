@@ -4,8 +4,8 @@
 
 The agent module contains the AI agent definitions and the orchestrator that runs them.
 Each agent is a LangChain4j `AiService` interface with a system prompt. The
-`AgentOrchestrator` subscribes to per-agent queues via `QueuePort` (`argus-cs-triage-queue`,
-`argus-version-drift-queue`, `argus-alert-noise-queue`), sets up the `AgentRunContext`
+`AgentOrchestrator` subscribes to per-agent queues via `QueuePort`
+(`argus-version-drift-queue`, `argus-alert-noise-queue`), sets up the `AgentRunContext`
 (ThreadLocal with agent run ID and type), dispatches to the appropriate agent, and
 publishes completion events. All agents use `GuardedToolProvider` exclusively — no
 `@Tool` annotations, no `.tools()` calls.
@@ -27,7 +27,7 @@ None (subscribes to queues via QueuePort, not Spring events).
 
 ## Queue Interactions
 
-- **Reads from**: `argus-cs-triage-queue`, `argus-version-drift-queue`, `argus-alert-noise-queue` — receives raw payload strings
+- **Reads from**: `argus-version-drift-queue`, `argus-alert-noise-queue` — receives raw payload strings
 - **Writes to**: `argus-audit-queue` (indirectly via `AuditService`)
 
 ## MCP Interactions

@@ -34,22 +34,6 @@ argus:
 
   tools:
     allow-list:
-      - agentType: CS_TRIAGE
-        toolName: jira_get_issue
-        accessLevel: READ
-        requiresHitl: false
-      - agentType: CS_TRIAGE
-        toolName: jira_add_comment
-        accessLevel: READ_WRITE
-        requiresHitl: false
-      - agentType: CS_TRIAGE
-        toolName: grafana_search_dashboards
-        accessLevel: READ
-        requiresHitl: false
-      - agentType: CS_TRIAGE
-        toolName: grafana_list_alert_rules
-        accessLevel: READ
-        requiresHitl: false
       - agentType: VERSION_DRIFT
         toolName: jira_get_issue
         accessLevel: READ
