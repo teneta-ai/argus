@@ -44,9 +44,9 @@ class GuardedToolProviderTest {
         sanitizer = new PromptInjectionSanitizer(new SanitizerProperties(null));
 
         guardedToolProvider = new GuardedToolProvider(
-                mcpToolProvider, allowList, hitlService, auditService, sanitizer);
+                mcpToolProvider, java.util.List.of(), allowList, hitlService, auditService, sanitizer);
 
-        RunContextHolder.set(new AgentRunContext(UUID.randomUUID(), AgentType.CS_TRIAGE));
+        RunContextHolder.set(new AgentRunContext(UUID.randomUUID(), AgentType.VERSION_DRIFT));
     }
 
     @AfterEach
@@ -57,7 +57,7 @@ class GuardedToolProviderTest {
     @Test
     void blockedToolNotInAllowList() {
         allowList.setAllowList(java.util.List.of(
-                new ToolAllowListEntry("CS_TRIAGE", "jira_get_issue",
+                new ToolAllowListEntry("VERSION_DRIFT", "jira_get_issue",
                         ToolAllowListEntry.AccessLevel.READ, false)
         ));
 
@@ -79,7 +79,7 @@ class GuardedToolProviderTest {
     @Test
     void hitlRequiredToolCallsHitlService() {
         allowList.setAllowList(java.util.List.of(
-                new ToolAllowListEntry("CS_TRIAGE", "jira_add_comment",
+                new ToolAllowListEntry("VERSION_DRIFT", "jira_add_comment",
                         ToolAllowListEntry.AccessLevel.READ_WRITE, true)
         ));
 
@@ -104,7 +104,7 @@ class GuardedToolProviderTest {
     @Test
     void hitlRejectionPropagatesException() {
         allowList.setAllowList(java.util.List.of(
-                new ToolAllowListEntry("CS_TRIAGE", "jira_add_comment",
+                new ToolAllowListEntry("VERSION_DRIFT", "jira_add_comment",
                         ToolAllowListEntry.AccessLevel.READ_WRITE, true)
         ));
 
@@ -127,9 +127,46 @@ class GuardedToolProviderTest {
     }
 
     @Test
+    void localToolIsExposedAndExecuted() {
+        allowList.setAllowList(java.util.List.of(
+                new ToolAllowListEntry("VERSION_DRIFT", "get_current_time",
+                        ToolAllowListEntry.AccessLevel.READ, false)
+        ));
+
+        ToolSpecification localSpec = ToolSpecification.builder().name("get_current_time").build();
+        ToolExecutor localExecutor = mock(ToolExecutor.class);
+        when(localExecutor.execute(any(), any())).thenReturn("2026-04-30T12:00:00Z");
+
+        LocalTool localTool = mock(LocalTool.class);
+        when(localTool.specification()).thenReturn(localSpec);
+        when(localTool.executor()).thenReturn(localExecutor);
+
+        when(mcpToolProvider.provideTools(any()))
+                .thenReturn(new ToolProviderResult(Map.of()));
+
+        GuardedToolProvider provider = new GuardedToolProvider(
+                mcpToolProvider, java.util.List.of(localTool),
+                allowList, hitlService, auditService, sanitizer);
+
+        // Test runs with VERSION_DRIFT context (overriding the CS context from setUp)
+        RunContextHolder.set(new AgentRunContext(UUID.randomUUID(), AgentType.VERSION_DRIFT));
+
+        ToolProviderResult result = provider.provideTools(mock(ToolProviderRequest.class));
+        assertTrue(result.tools().containsKey(localSpec));
+
+        ToolExecutionRequest execReq = ToolExecutionRequest.builder()
+                .name("get_current_time").arguments("{}").build();
+        String output = result.tools().get(localSpec).execute(execReq, "memory");
+
+        assertTrue(output.contains("2026-04-30T12:00:00Z"));
+        assertTrue(output.contains("<external_data source=\"local\">"));
+        verify(localExecutor).execute(eq(execReq), any());
+    }
+
+    @Test
     void sanitizesToolOutput() {
         allowList.setAllowList(java.util.List.of(
-                new ToolAllowListEntry("CS_TRIAGE", "jira_get_issue",
+                new ToolAllowListEntry("VERSION_DRIFT", "jira_get_issue",
                         ToolAllowListEntry.AccessLevel.READ, false)
         ));
 

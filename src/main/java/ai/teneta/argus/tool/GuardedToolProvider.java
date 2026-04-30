@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,6 +30,7 @@ public class GuardedToolProvider implements ToolProvider {
     private static final Logger log = LoggerFactory.getLogger(GuardedToolProvider.class);
 
     private final McpToolProvider delegate;
+    private final List<LocalTool> localTools;
     private final ToolAllowList allowList;
     private final HitlService hitlService;
     private final AuditService auditService;
@@ -36,11 +38,13 @@ public class GuardedToolProvider implements ToolProvider {
 
     public GuardedToolProvider(
             McpToolProvider delegate,
+            List<LocalTool> localTools,
             ToolAllowList allowList,
             HitlService hitlService,
             AuditService auditService,
             PromptInjectionSanitizer sanitizer) {
         this.delegate = delegate;
+        this.localTools = localTools;
         this.allowList = allowList;
         this.hitlService = hitlService;
         this.auditService = auditService;
@@ -53,12 +57,16 @@ public class GuardedToolProvider implements ToolProvider {
         AgentType agentType = ctx.agentType();
         UUID agentRunId = ctx.runId();
 
-        // 1. Get all tools from all MCP servers
-        ToolProviderResult mcpResult = delegate.provideTools(request);
+        // 1. Collect tools from MCP servers and from in-process LocalTool beans
+        Map<ToolSpecification, ToolExecutor> available = new LinkedHashMap<>();
+        available.putAll(delegate.provideTools(request).tools());
+        for (LocalTool tool : localTools) {
+            available.put(tool.specification(), tool.executor());
+        }
 
         // 2. Filter to only allow-listed tools for this agent type
         Map<ToolSpecification, ToolExecutor> guarded = new LinkedHashMap<>();
-        for (Map.Entry<ToolSpecification, ToolExecutor> entry : mcpResult.tools().entrySet()) {
+        for (Map.Entry<ToolSpecification, ToolExecutor> entry : available.entrySet()) {
             String toolName = entry.getKey().name();
             if (allowList.isApproved(agentType, toolName)) {
                 guarded.put(entry.getKey(),
@@ -87,7 +95,7 @@ public class GuardedToolProvider implements ToolProvider {
                 // blocks virtual thread until approved / rejected / timed out
             }
 
-            // 5. Execute via MCP
+            // 5. Execute (MCP or local)
             String result;
             try {
                 result = delegate.execute(executionRequest, memoryId);
@@ -96,7 +104,7 @@ public class GuardedToolProvider implements ToolProvider {
                 throw e;
             }
 
-            // 6. Sanitize MCP response before returning to LLM
+            // 6. Sanitize tool response before returning to LLM
             DataSource source = DataSource.fromToolName(toolName);
             String sanitized = sanitizer.sanitize(result, source);
 

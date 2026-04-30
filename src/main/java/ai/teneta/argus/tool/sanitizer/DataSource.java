@@ -4,6 +4,7 @@ public enum DataSource {
 
     JIRA("jira", 4000),
     GRAFANA("grafana", 1000),
+    LOCAL("local", 1000),
     WEBHOOK_PAYLOAD("webhook-payload", 2000);
 
     private final String label;
@@ -28,6 +29,9 @@ public enum DataSource {
         }
         if (toolName.startsWith("grafana_")) {
             return GRAFANA;
+        }
+        if (toolName.startsWith("get_") || toolName.startsWith("local_")) {
+            return LOCAL;
         }
         return WEBHOOK_PAYLOAD;
     }

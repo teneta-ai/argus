@@ -23,7 +23,6 @@ None.
 
 ## Queue Interactions
 
-- **argus-cs-triage-queue** — triggers and schedules publish payloads for CS Triage agent
 - **argus-version-drift-queue** — triggers and schedules publish payloads for Version Drift agent
 - **argus-alert-noise-queue** — triggers and schedules publish payloads for Alert Noise agent
 - **argus-hitl-request-queue** — used by HITL module for approval request processing

@@ -1,7 +1,6 @@
 package ai.teneta.argus.agent;
 
 import ai.teneta.argus.agent.impl.AlertNoiseAgent;
-import ai.teneta.argus.agent.impl.CsTriageAgent;
 import ai.teneta.argus.agent.impl.VersionDriftAgent;
 import ai.teneta.argus.audit.AuditEvent;
 import ai.teneta.argus.audit.AuditService;
@@ -20,7 +19,6 @@ import static org.mockito.Mockito.*;
 class AgentOrchestratorTest {
 
     private QueuePort queuePort;
-    private CsTriageAgent csTriageAgent;
     private VersionDriftAgent versionDriftAgent;
     private AlertNoiseAgent alertNoiseAgent;
     private AuditService auditService;
@@ -31,7 +29,6 @@ class AgentOrchestratorTest {
     @BeforeEach
     void setUp() {
         queuePort = mock(QueuePort.class);
-        csTriageAgent = mock(CsTriageAgent.class);
         versionDriftAgent = mock(VersionDriftAgent.class);
         alertNoiseAgent = mock(AlertNoiseAgent.class);
         auditService = mock(AuditService.class);
@@ -42,7 +39,7 @@ class AgentOrchestratorTest {
                 .thenReturn(LlmOutputValidator.ValidationResult.ok());
 
         orchestrator = new AgentOrchestrator(
-                queuePort, csTriageAgent, versionDriftAgent, alertNoiseAgent,
+                queuePort, versionDriftAgent, alertNoiseAgent,
                 auditService, llmOutputValidator, eventPublisher);
     }
 
@@ -50,32 +47,12 @@ class AgentOrchestratorTest {
     void startListeningSubscribesToPerAgentQueues() {
         orchestrator.startListening();
 
-        verify(queuePort).subscribe(eq(QueueNames.CS_TRIAGE), any(QueuePort.MessageHandler.class));
         verify(queuePort).subscribe(eq(QueueNames.VERSION_DRIFT), any(QueuePort.MessageHandler.class));
         verify(queuePort).subscribe(eq(QueueNames.ALERT_NOISE), any(QueuePort.MessageHandler.class));
     }
 
     @Test
-    void dispatchesCsTriageAgentAndPublishesCompletionEvent() throws Exception {
-        when(csTriageAgent.triage("PROJ-123")).thenReturn("Triaged successfully");
-
-        ArgumentCaptor<QueuePort.MessageHandler> handlerCaptor =
-                ArgumentCaptor.forClass(QueuePort.MessageHandler.class);
-        orchestrator.startListening();
-        verify(queuePort).subscribe(eq(QueueNames.CS_TRIAGE), handlerCaptor.capture());
-
-        handlerCaptor.getValue().handle("PROJ-123");
-
-        verify(csTriageAgent).triage("PROJ-123");
-        verify(llmOutputValidator).validate("Triaged successfully", null);
-        verify(auditService).publish(argThat(e ->
-                e.status() == AuditEvent.Status.SUCCESS
-                        && e.toolName().equals("ORCHESTRATOR")));
-        verify(eventPublisher).publishEvent(any(AgentCompletedEvent.class));
-    }
-
-    @Test
-    void dispatchesVersionDriftAgent() throws Exception {
+    void dispatchesVersionDriftAgentAndPublishesCompletionEvent() throws Exception {
         when(versionDriftAgent.detectDrift("my-service:1.2.3")).thenReturn("No drift");
 
         ArgumentCaptor<QueuePort.MessageHandler> handlerCaptor =
@@ -86,6 +63,11 @@ class AgentOrchestratorTest {
         handlerCaptor.getValue().handle("my-service:1.2.3");
 
         verify(versionDriftAgent).detectDrift("my-service:1.2.3");
+        verify(llmOutputValidator).validate("No drift", null);
+        verify(auditService).publish(argThat(e ->
+                e.status() == AuditEvent.Status.SUCCESS
+                        && e.toolName().equals("ORCHESTRATOR")));
+        verify(eventPublisher).publishEvent(any(AgentCompletedEvent.class));
     }
 
     @Test
@@ -104,14 +86,14 @@ class AgentOrchestratorTest {
 
     @Test
     void agentFailurePublishesFailedAuditEvent() throws Exception {
-        when(csTriageAgent.triage(any())).thenThrow(new RuntimeException("LLM timeout"));
+        when(versionDriftAgent.detectDrift(any())).thenThrow(new RuntimeException("LLM timeout"));
 
         ArgumentCaptor<QueuePort.MessageHandler> handlerCaptor =
                 ArgumentCaptor.forClass(QueuePort.MessageHandler.class);
         orchestrator.startListening();
-        verify(queuePort).subscribe(eq(QueueNames.CS_TRIAGE), handlerCaptor.capture());
+        verify(queuePort).subscribe(eq(QueueNames.VERSION_DRIFT), handlerCaptor.capture());
 
-        assertThrows(Exception.class, () -> handlerCaptor.getValue().handle("PROJ-999"));
+        assertThrows(Exception.class, () -> handlerCaptor.getValue().handle("svc-999"));
 
         verify(auditService).publish(argThat(e ->
                 e.status() == AuditEvent.Status.FAILED
@@ -121,16 +103,16 @@ class AgentOrchestratorTest {
 
     @Test
     void rejectedLlmOutputPublishesFailedAuditEvent() throws Exception {
-        when(csTriageAgent.triage(any())).thenReturn("I am not an AI, I am a human");
+        when(versionDriftAgent.detectDrift(any())).thenReturn("I am not an AI, I am a human");
         when(llmOutputValidator.validate(any(), any()))
                 .thenReturn(LlmOutputValidator.ValidationResult.rejected("Identity denial detected"));
 
         ArgumentCaptor<QueuePort.MessageHandler> handlerCaptor =
                 ArgumentCaptor.forClass(QueuePort.MessageHandler.class);
         orchestrator.startListening();
-        verify(queuePort).subscribe(eq(QueueNames.CS_TRIAGE), handlerCaptor.capture());
+        verify(queuePort).subscribe(eq(QueueNames.VERSION_DRIFT), handlerCaptor.capture());
 
-        assertThrows(Exception.class, () -> handlerCaptor.getValue().handle("PROJ-1"));
+        assertThrows(Exception.class, () -> handlerCaptor.getValue().handle("svc-1"));
 
         verify(auditService).publish(argThat(e ->
                 e.status() == AuditEvent.Status.FAILED
@@ -140,14 +122,14 @@ class AgentOrchestratorTest {
 
     @Test
     void runContextIsClearedAfterSuccessfulRun() throws Exception {
-        when(csTriageAgent.triage(any())).thenReturn("done");
+        when(versionDriftAgent.detectDrift(any())).thenReturn("done");
 
         ArgumentCaptor<QueuePort.MessageHandler> handlerCaptor =
                 ArgumentCaptor.forClass(QueuePort.MessageHandler.class);
         orchestrator.startListening();
-        verify(queuePort).subscribe(eq(QueueNames.CS_TRIAGE), handlerCaptor.capture());
+        verify(queuePort).subscribe(eq(QueueNames.VERSION_DRIFT), handlerCaptor.capture());
 
-        handlerCaptor.getValue().handle("PROJ-1");
+        handlerCaptor.getValue().handle("svc-1");
 
         assertThrows(IllegalStateException.class, RunContextHolder::current,
                 "RunContext should be cleared after agent run");
@@ -155,15 +137,15 @@ class AgentOrchestratorTest {
 
     @Test
     void runContextIsClearedAfterFailedRun() throws Exception {
-        when(csTriageAgent.triage(any())).thenThrow(new RuntimeException("boom"));
+        when(versionDriftAgent.detectDrift(any())).thenThrow(new RuntimeException("boom"));
 
         ArgumentCaptor<QueuePort.MessageHandler> handlerCaptor =
                 ArgumentCaptor.forClass(QueuePort.MessageHandler.class);
         orchestrator.startListening();
-        verify(queuePort).subscribe(eq(QueueNames.CS_TRIAGE), handlerCaptor.capture());
+        verify(queuePort).subscribe(eq(QueueNames.VERSION_DRIFT), handlerCaptor.capture());
 
         try {
-            handlerCaptor.getValue().handle("PROJ-1");
+            handlerCaptor.getValue().handle("svc-1");
         } catch (Exception ignored) {
         }
 

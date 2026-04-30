@@ -26,12 +26,12 @@ class LlmOutputValidatorTest {
     void setUp() {
         allowList = new ToolAllowList();
         allowList.setAllowList(List.of(
-                new ToolAllowListEntry("CS_TRIAGE", "jira_get_issue",
+                new ToolAllowListEntry("VERSION_DRIFT", "jira_get_issue",
                         ToolAllowListEntry.AccessLevel.READ, false)
         ));
         auditService = mock(AuditService.class);
         validator = new LlmOutputValidator(allowList, auditService);
-        RunContextHolder.set(new AgentRunContext(UUID.randomUUID(), AgentType.CS_TRIAGE));
+        RunContextHolder.set(new AgentRunContext(UUID.randomUUID(), AgentType.VERSION_DRIFT));
     }
 
     @AfterEach

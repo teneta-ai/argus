@@ -21,7 +21,7 @@ None.
 
 ## Queue Interactions
 
-- **Writes to**: `argus-cs-triage-queue`, `argus-version-drift-queue`, `argus-alert-noise-queue` — each trigger publishes a sanitized payload to the target agent's queue
+- **Writes to**: `argus-version-drift-queue`, `argus-alert-noise-queue` — each trigger publishes a sanitized payload to the target agent's queue
 
 ## MCP Interactions
 

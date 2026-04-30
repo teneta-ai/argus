@@ -3,7 +3,6 @@ package ai.teneta.argus.agent;
 import ai.teneta.argus.shared.AgentType;
 import ai.teneta.argus.shared.RunContextHolder;
 import ai.teneta.argus.agent.impl.AlertNoiseAgent;
-import ai.teneta.argus.agent.impl.CsTriageAgent;
 import ai.teneta.argus.agent.impl.VersionDriftAgent;
 import ai.teneta.argus.audit.AuditEvent;
 import ai.teneta.argus.audit.AuditService;
@@ -25,7 +24,6 @@ public class AgentOrchestrator {
     private static final Logger log = LoggerFactory.getLogger(AgentOrchestrator.class);
 
     private final QueuePort queuePort;
-    private final CsTriageAgent csTriageAgent;
     private final VersionDriftAgent versionDriftAgent;
     private final AlertNoiseAgent alertNoiseAgent;
     private final AuditService auditService;
@@ -34,14 +32,12 @@ public class AgentOrchestrator {
 
     public AgentOrchestrator(
             QueuePort queuePort,
-            CsTriageAgent csTriageAgent,
             VersionDriftAgent versionDriftAgent,
             AlertNoiseAgent alertNoiseAgent,
             AuditService auditService,
             LlmOutputValidator llmOutputValidator,
             ApplicationEventPublisher eventPublisher) {
         this.queuePort = queuePort;
-        this.csTriageAgent = csTriageAgent;
         this.versionDriftAgent = versionDriftAgent;
         this.alertNoiseAgent = alertNoiseAgent;
         this.auditService = auditService;
@@ -51,7 +47,6 @@ public class AgentOrchestrator {
 
     @PostConstruct
     public void startListening() {
-        queuePort.subscribe(QueueNames.CS_TRIAGE, payload -> handleAgent(AgentType.CS_TRIAGE, payload));
         queuePort.subscribe(QueueNames.VERSION_DRIFT, payload -> handleAgent(AgentType.VERSION_DRIFT, payload));
         queuePort.subscribe(QueueNames.ALERT_NOISE, payload -> handleAgent(AgentType.ALERT_NOISE, payload));
         log.info("AgentOrchestrator subscribed to per-agent queues");
@@ -93,7 +88,6 @@ public class AgentOrchestrator {
 
     private String runAgent(AgentType agentType, String payload) {
         return switch (agentType) {
-            case CS_TRIAGE -> csTriageAgent.triage(payload);
             case VERSION_DRIFT -> versionDriftAgent.detectDrift(payload);
             case ALERT_NOISE -> alertNoiseAgent.evaluateAlert(payload);
         };

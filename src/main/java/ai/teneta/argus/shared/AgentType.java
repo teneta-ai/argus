@@ -4,17 +4,6 @@ import ai.teneta.argus.queue.QueueNames;
 
 public enum AgentType {
 
-    CS_TRIAGE(
-            "CS Triage Agent",
-            """
-            Triage incoming customer support tickets. For the given Jira issue:
-            1. Fetch the issue details using jira_get_issue.
-            2. Search Grafana dashboards and alert rules for related metrics.
-            3. Post a jira_add_comment with: root cause hypothesis, suggested priority, \
-            suggested assignee team, and confidence level.
-            You MUST always post a comment. If you cannot determine root cause, say so explicitly."""
-    ),
-
     VERSION_DRIFT(
             "Version Drift Detection Agent",
             """
@@ -55,7 +44,6 @@ public enum AgentType {
 
     public String queueName() {
         return switch (this) {
-            case CS_TRIAGE -> QueueNames.CS_TRIAGE;
             case VERSION_DRIFT -> QueueNames.VERSION_DRIFT;
             case ALERT_NOISE -> QueueNames.ALERT_NOISE;
         };

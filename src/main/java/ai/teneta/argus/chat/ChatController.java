@@ -2,7 +2,6 @@ package ai.teneta.argus.chat;
 
 import ai.teneta.argus.agent.AgentRunContext;
 import ai.teneta.argus.agent.impl.AlertNoiseAgent;
-import ai.teneta.argus.agent.impl.CsTriageAgent;
 import ai.teneta.argus.agent.impl.VersionDriftAgent;
 import ai.teneta.argus.audit.AuditEvent;
 import ai.teneta.argus.audit.AuditService;
@@ -27,7 +26,6 @@ public class ChatController {
 
     private static final Logger log = LoggerFactory.getLogger(ChatController.class);
 
-    private final CsTriageAgent csTriageAgent;
     private final VersionDriftAgent versionDriftAgent;
     private final AlertNoiseAgent alertNoiseAgent;
     private final AuditService auditService;
@@ -35,13 +33,11 @@ public class ChatController {
     private final PromptInjectionSanitizer sanitizer;
 
     public ChatController(
-            CsTriageAgent csTriageAgent,
             VersionDriftAgent versionDriftAgent,
             AlertNoiseAgent alertNoiseAgent,
             AuditService auditService,
             LlmOutputValidator llmOutputValidator,
             PromptInjectionSanitizer sanitizer) {
-        this.csTriageAgent = csTriageAgent;
         this.versionDriftAgent = versionDriftAgent;
         this.alertNoiseAgent = alertNoiseAgent;
         this.auditService = auditService;
@@ -107,7 +103,6 @@ public class ChatController {
 
     private String runAgent(AgentType agentType, String payload) {
         return switch (agentType) {
-            case CS_TRIAGE -> csTriageAgent.triage(payload);
             case VERSION_DRIFT -> versionDriftAgent.detectDrift(payload);
             case ALERT_NOISE -> alertNoiseAgent.evaluateAlert(payload);
         };

@@ -34,22 +34,6 @@ argus:
 
   tools:
     allow-list:
-      - agentType: CS_TRIAGE
-        toolName: jira_get_issue
-        accessLevel: READ
-        requiresHitl: false
-      - agentType: CS_TRIAGE
-        toolName: jira_add_comment
-        accessLevel: READ_WRITE
-        requiresHitl: false
-      - agentType: CS_TRIAGE
-        toolName: grafana_search_dashboards
-        accessLevel: READ
-        requiresHitl: false
-      - agentType: CS_TRIAGE
-        toolName: grafana_list_alert_rules
-        accessLevel: READ
-        requiresHitl: false
       - agentType: VERSION_DRIFT
         toolName: jira_get_issue
         accessLevel: READ
@@ -78,6 +62,14 @@ argus:
         toolName: jira_create_issue
         accessLevel: READ_WRITE
         requiresHitl: true
+      - agentType: VERSION_DRIFT
+        toolName: get_current_time
+        accessLevel: READ
+        requiresHitl: false
+      - agentType: ALERT_NOISE
+        toolName: get_current_time
+        accessLevel: READ
+        requiresHitl: false
 
   sanitizer:
     max-chars:
